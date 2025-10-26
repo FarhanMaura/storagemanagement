@@ -41,6 +41,15 @@
                 </div>
             </div>
 
+            <!-- DEBUG INFO -->
+            <div class="bg-yellow-100 border border-yellow-400 p-4 rounded-lg mb-6">
+                <h4 class="font-bold text-yellow-800">DEBUG INFO:</h4>
+                <p>Total Data: {{ $statistik['total_laporan'] }}</p>
+                <p>Top Barang Masuk Count: {{ $statistik['top_barang_masuk']->count() }}</p>
+                <p>Top Barang Keluar Count: {{ $statistik['top_barang_keluar']->count() }}</p>
+                <p>Top Users Count: {{ $statistik['top_users']->count() }}</p>
+            </div>
+
             <!-- Statistik Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <!-- Total Barang Masuk -->
@@ -343,160 +352,188 @@
         </div>
     </div>
 
+    <!-- Load Chart.js dari CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
-        // Data dari controller
-        const chartData = @json($chartData);
-
-        // Line Chart - 6 Bulan Terakhir
-        const lineCtx = document.getElementById('lineChart').getContext('2d');
-        new Chart(lineCtx, {
-            type: 'line',
-            data: {
-                labels: chartData.months,
-                datasets: [
-                    {
-                        label: 'Barang Masuk',
-                        data: chartData.data_masuk,
-                        borderColor: '#10B981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4
-                    },
-                    {
-                        label: 'Barang Keluar',
-                        data: chartData.data_keluar,
-                        borderColor: '#EF4444',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            drawBorder: false
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
-        });
-
-        // Pie Chart - Jenis Laporan
-        const pieCtx = document.getElementById('pieChart').getContext('2d');
-        new Chart(pieCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Barang Masuk', 'Barang Keluar'],
-                datasets: [{
-                    data: [chartData.total_masuk_count, chartData.total_keluar_count],
-                    backgroundColor: ['#10B981', '#EF4444'],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                },
-                cutout: '60%'
-            }
-        });
-
-        // Bar Chart - 7 Hari Terakhir
-        const barCtx = document.getElementById('barChart').getContext('2d');
-        new Chart(barCtx, {
-            type: 'bar',
-            data: {
-                labels: chartData.days,
-                datasets: [
-                    {
-                        label: 'Barang Masuk',
-                        data: chartData.daily_masuk,
-                        backgroundColor: '#10B981',
-                        borderRadius: 8,
-                    },
-                    {
-                        label: 'Barang Keluar',
-                        data: chartData.daily_keluar,
-                        backgroundColor: '#EF4444',
-                        borderRadius: 8,
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    },
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-
-        // Auto refresh data setiap 2 menit
-        setInterval(() => {
-            fetch('/statistik/api')
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Data statistik diperbarui:', data.timestamp);
-                    // Di sini bisa update chart dengan data baru
-                })
-                .catch(error => console.error('Error fetching data:', error));
-        }, 120000);
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            // Ctrl + P untuk PDF
-            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-                e.preventDefault();
-                window.open('{{ route("statistik.export.pdf") }}', '_blank');
-            }
-
-            // Ctrl + D untuk download CSV
-            if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
-                e.preventDefault();
-                window.location.href = '{{ route("statistik.export.csv") }}';
-            }
-        });
-
-        // Show keyboard shortcuts info
+        // Tunggu sampai DOM fully loaded
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('Initializing charts...');
+
+            // Data dari controller - dengan error handling
+            const chartData = @json($chartData);
+            console.log('Chart data loaded:', chartData);
+
+            // Safety check untuk data
+            if (!chartData) {
+                console.error('Chart data is empty or undefined');
+                return;
+            }
+
+            try {
+                // Line Chart - 6 Bulan Terakhir
+                const lineCtx = document.getElementById('lineChart');
+                if (lineCtx) {
+                    new Chart(lineCtx, {
+                        type: 'line',
+                        data: {
+                            labels: chartData.months || [],
+                            datasets: [
+                                {
+                                    label: 'Barang Masuk',
+                                    data: chartData.data_masuk || [],
+                                    borderColor: '#10B981',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                    borderWidth: 3,
+                                    fill: true,
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'Barang Keluar',
+                                    data: chartData.data_keluar || [],
+                                    borderColor: '#EF4444',
+                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                    borderWidth: 3,
+                                    fill: true,
+                                    tension: 0.4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: {
+                                        drawBorder: false
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    console.log('Line chart initialized');
+                }
+
+                // Pie Chart - Jenis Laporan
+                const pieCtx = document.getElementById('pieChart');
+                if (pieCtx) {
+                    new Chart(pieCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Barang Masuk', 'Barang Keluar'],
+                            datasets: [{
+                                data: [
+                                    chartData.total_masuk_count || 0,
+                                    chartData.total_keluar_count || 0
+                                ],
+                                backgroundColor: ['#10B981', '#EF4444'],
+                                borderWidth: 2,
+                                borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            },
+                            cutout: '60%'
+                        }
+                    });
+                    console.log('Pie chart initialized');
+                }
+
+                // Bar Chart - 7 Hari Terakhir
+                const barCtx = document.getElementById('barChart');
+                if (barCtx) {
+                    new Chart(barCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: chartData.days || [],
+                            datasets: [
+                                {
+                                    label: 'Barang Masuk',
+                                    data: chartData.daily_masuk || [],
+                                    backgroundColor: '#10B981',
+                                    borderRadius: 8,
+                                },
+                                {
+                                    label: 'Barang Keluar',
+                                    data: chartData.daily_keluar || [],
+                                    backgroundColor: '#EF4444',
+                                    borderRadius: 8,
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: {
+                                        display: false
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                    console.log('Bar chart initialized');
+                }
+
+            } catch (error) {
+                console.error('Error initializing charts:', error);
+            }
+
+            // Auto refresh data setiap 2 menit
+            setInterval(() => {
+                fetch('/statistik/api')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Data statistik diperbarui:', data.timestamp);
+                    })
+                    .catch(error => console.error('Error fetching data:', error));
+            }, 120000);
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Ctrl + P untuk PDF
+                if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                    e.preventDefault();
+                    window.open('{{ route("statistik.export.pdf") }}', '_blank');
+                }
+
+                // Ctrl + D untuk download CSV
+                if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
+                    e.preventDefault();
+                    window.location.href = '{{ route("statistik.export.csv") }}';
+                }
+            });
+
             console.log('🎯 Keyboard Shortcuts Statistik:');
             console.log('• Ctrl + P : Download PDF');
             console.log('• Ctrl + D : Download CSV');
