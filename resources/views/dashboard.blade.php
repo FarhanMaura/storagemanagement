@@ -80,12 +80,6 @@
                             <span class="text-2xl text-blue-600 dark:text-blue-400">📊</span>
                         </div>
                     </div>
-                    <div class="mt-4 flex items-center text-sm text-green-600 dark:text-green-400">
-                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                        <span>+12% dari bulan lalu</span>
-                    </div>
                 </div>
 
                 <!-- Barang Masuk -->
@@ -98,12 +92,6 @@
                         <div class="bg-green-100 dark:bg-green-900 p-4 rounded-xl group-hover:bg-green-200 dark:group-hover:bg-green-800 transition-colors">
                             <span class="text-2xl text-green-600 dark:text-green-400">📥</span>
                         </div>
-                    </div>
-                    <div class="mt-4 flex items-center text-sm text-green-600 dark:text-green-400">
-                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                        <span>+8% dari bulan lalu</span>
                     </div>
                 </div>
 
@@ -118,12 +106,6 @@
                             <span class="text-2xl text-red-600 dark:text-red-400">📤</span>
                         </div>
                     </div>
-                    <div class="mt-4 flex items-center text-sm text-red-600 dark:text-red-400">
-                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                        <span>-3% dari bulan lalu</span>
-                    </div>
                 </div>
 
                 <!-- Total User -->
@@ -136,12 +118,6 @@
                         <div class="bg-purple-100 dark:bg-purple-900 p-4 rounded-xl group-hover:bg-purple-200 dark:group-hover:bg-purple-800 transition-colors">
                             <span class="text-2xl text-purple-600 dark:text-purple-400">👥</span>
                         </div>
-                    </div>
-                    <div class="mt-4 flex items-center text-sm text-green-600 dark:text-green-400">
-                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                        <span>Aktif semua</span>
                     </div>
                 </div>
             </div>

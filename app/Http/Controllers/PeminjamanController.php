@@ -303,20 +303,33 @@ class PeminjamanController extends Controller
         $barangAsli->jumlah += $peminjaman->jumlah_pinjam;
         $barangAsli->save();
 
+        // === PERBAIKAN: BATAL RECORD BARANG KELUAR ===
+        // Cari record barang keluar yang dibuat saat peminjaman
+        $barangKeluar = Laporan::where('jenis_laporan', 'keluar')
+            ->where('kode_barang', $peminjaman->barang->kode_barang)
+            ->where('keterangan', 'like', '%PEMINJAMAN: ' . $peminjaman->kode_peminjaman . '%')
+            ->first();
+
+        if ($barangKeluar) {
+            // Hapus record barang keluar yang terkait dengan peminjaman ini
+            $barangKeluar->delete();
+        }
+
         // Update status peminjaman
         $peminjaman->update([
             'status' => 'returned',
             'returned_at' => now(),
         ]);
 
-        // Buat laporan barang masuk otomatis (pengembalian) - TAPI dengan jumlah 0 untuk tracking saja
+        // === PERBAIKAN: BUAT LAPORAN PENGEMBALIAN TANPA MENAMBAH STOK ===
+        // Hanya untuk tracking, jumlah = 0 karena stok sudah ditambahkan ke barang asli
         Laporan::create([
             'jenis_laporan' => 'masuk',
             'kode_barang' => $peminjaman->barang->kode_barang,
             'nama_barang' => $peminjaman->barang->nama_barang,
-            'jumlah' => 0, // Jumlah 0 karena sudah ditambahkan ke barang asli
+            'jumlah' => 0, // JADI 0 karena stok sudah ditambahkan di atas
             'satuan' => $peminjaman->barang->satuan,
-            'keterangan' => 'PENGEMBALIAN: ' . $peminjaman->kode_peminjaman . ' - ' . $peminjaman->keperluan,
+            'keterangan' => 'PENGEMBALIAN: ' . $peminjaman->kode_peminjaman . ' - ' . $peminjaman->keperluan . ' (Stok sudah dikembalikan ke inventory)',
             'lokasi' => $barangAsli->lokasi,
             'user_id' => auth()->id(),
         ]);
