@@ -5,6 +5,31 @@
         </h2>
     </x-slot>
 
+    <style>
+    .rotate-180 {
+        transform: rotate(180deg);
+    }
+
+    /* Simple dropdown styling */
+    .dropdown-container {
+        position: relative;
+    }
+
+    .dropdown-content {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 50;
+        margin-top: 0.5rem;
+    }
+
+    /* Pastikan card tidak memotong dropdown */
+    .stat-card {
+        overflow: visible;
+    }
+    </style>
+
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <!-- Welcome Banner -->
@@ -40,10 +65,10 @@
             <!-- Statistik Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <!-- Barang Masuk -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 transition-all duration-300 hover:shadow-xl hover:scale-105 group">
+                <div class="stat-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 transition-all duration-300 hover:shadow-xl group">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center">
-                            <div class="bg-green-100 dark:bg-green-900 p-4 rounded-xl group-hover:bg-green-200 dark:group-hover:bg-green-800 transition-colors">
+                            <div class="bg-gradient-to-br from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 p-4 rounded-xl group-hover:from-green-200 group-hover:to-green-300 dark:group-hover:from-green-800 dark:group-hover:to-green-700 transition-all duration-300 shadow-sm">
                                 <span class="text-2xl text-green-600 dark:text-green-400">📥</span>
                             </div>
                             <div class="ml-4">
@@ -52,13 +77,64 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Dropdown Detail -->
+                    @if(count($statistikSatuan['masuk']) > 0)
+                    <div class="dropdown-container">
+                        <button type="button"
+                                class="w-full bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/40 dark:to-green-800/40 hover:from-green-100 hover:to-green-200 dark:hover:from-green-800/60 dark:hover:to-green-700/60 text-green-700 dark:text-green-300 text-sm font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-between dropdown-trigger border border-green-200 dark:border-green-700 hover:border-green-300 dark:hover:border-green-600 hover:shadow-md"
+                                data-target="masukDetails">
+                            <div class="flex items-center">
+                                <span class="w-2 h-2 bg-green-500 rounded-full mr-3 animate-pulse"></span>
+                                <span>📊 Breakdown per Satuan</span>
+                            </div>
+                            <svg class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+
+                        <div id="masukDetails" class="dropdown-content bg-white dark:bg-gray-800 border border-green-200 dark:border-green-700 rounded-2xl shadow-2xl overflow-hidden hidden transform transition-all duration-300 origin-top">
+                            <div class="p-5 max-h-80 overflow-y-auto">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="font-bold text-gray-900 dark:text-white text-sm flex items-center">
+                                        <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                                        DETAIL BARANG MASUK
+                                    </h4>
+                                    <span class="text-xs font-semibold bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 px-2 py-1 rounded-full">
+                                        {{ count($statistikSatuan['masuk']) }} Satuan
+                                    </span>
+                                </div>
+
+                                <div class="space-y-3">
+                                    @foreach($statistikSatuan['masuk'] as $item)
+                                    <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 capitalize flex items-center">
+                                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                                {{ $item['satuan'] }}
+                                            </span>
+                                            <span class="text-sm font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900 px-2 py-1 rounded-full">
+                                                {{ number_format($item['total']) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @else
+                    <div class="text-center py-4 text-gray-400 dark:text-gray-500 text-sm">
+                        📝 Belum ada data barang masuk
+                    </div>
+                    @endif
                 </div>
 
                 <!-- Barang Keluar -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 transition-all duration-300 hover:shadow-xl hover:scale-105 group">
+                <div class="stat-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 transition-all duration-300 hover:shadow-xl group">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center">
-                            <div class="bg-red-100 dark:bg-red-900 p-4 rounded-xl group-hover:bg-red-200 dark:group-hover:bg-red-800 transition-colors">
+                            <div class="bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900 dark:to-red-800 p-4 rounded-xl group-hover:from-red-200 group-hover:to-red-300 dark:group-hover:from-red-800 dark:group-hover:to-red-700 transition-all duration-300 shadow-sm">
                                 <span class="text-2xl text-red-600 dark:text-red-400">📤</span>
                             </div>
                             <div class="ml-4">
@@ -67,17 +143,73 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Dropdown Detail -->
+                    @if(count($statistikSatuan['keluar']) > 0)
+                    <div class="dropdown-container">
+                        <button type="button"
+                                class="w-full bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/40 dark:to-red-800/40 hover:from-red-100 hover:to-red-200 dark:hover:from-red-800/60 dark:hover:to-red-700/60 text-red-700 dark:text-red-300 text-sm font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-between dropdown-trigger border border-red-200 dark:border-red-700 hover:border-red-300 dark:hover:border-red-600 hover:shadow-md"
+                                data-target="keluarDetails">
+                            <div class="flex items-center">
+                                <span class="w-2 h-2 bg-red-500 rounded-full mr-3 animate-pulse"></span>
+                                <span>📊 Breakdown per Satuan</span>
+                            </div>
+                            <svg class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+
+                        <div id="keluarDetails" class="dropdown-content bg-white dark:bg-gray-800 border border-red-200 dark:border-red-700 rounded-2xl shadow-2xl overflow-hidden hidden transform transition-all duration-300 origin-top">
+                            <div class="p-5 max-h-80 overflow-y-auto">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="font-bold text-gray-900 dark:text-white text-sm flex items-center">
+                                        <span class="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+                                        DETAIL BARANG KELUAR
+                                    </h4>
+                                    <span class="text-xs font-semibold bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 px-2 py-1 rounded-full">
+                                        {{ count($statistikSatuan['keluar']) }} Satuan
+                                    </span>
+                                </div>
+
+                                <div class="space-y-3">
+                                    @foreach($statistikSatuan['keluar'] as $item)
+                                    <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-100 dark:border-gray-600">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 capitalize flex items-center">
+                                                <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                                                {{ $item['satuan'] }}
+                                            </span>
+                                            <span class="text-sm font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900 px-2 py-1 rounded-full">
+                                                {{ number_format($item['total']) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @else
+                    <div class="text-center py-4 text-gray-400 dark:text-gray-500 text-sm">
+                        📝 Belum ada data barang keluar
+                    </div>
+                    @endif
                 </div>
 
                 <!-- Total Transaksi -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 transition-all duration-300 hover:shadow-xl hover:scale-105 group">
+                <div class="stat-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 transition-all duration-300 hover:shadow-xl group">
                     <div class="flex items-center">
-                        <div class="bg-blue-100 dark:bg-blue-900 p-4 rounded-xl group-hover:bg-blue-200 dark:group-hover:bg-blue-800 transition-colors">
+                        <div class="bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 p-4 rounded-xl group-hover:from-blue-200 group-hover:to-blue-300 dark:group-hover:from-blue-800 dark:group-hover:to-blue-700 transition-all duration-300 shadow-sm">
                             <span class="text-2xl text-blue-600 dark:text-blue-400">📊</span>
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Transaksi</p>
                             <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($statistik['total_barang']) }}</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
+                            📈 {{ $laporan->total() }} Halaman
                         </div>
                     </div>
                 </div>
@@ -272,6 +404,55 @@
     </div>
 
     <script>
+        // Simple dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdownTriggers = document.querySelectorAll('.dropdown-trigger');
+
+            dropdownTriggers.forEach(trigger => {
+                trigger.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const targetId = this.getAttribute('data-target');
+                    const dropdown = document.getElementById(targetId);
+                    const arrow = this.querySelector('svg');
+
+                    // Toggle current dropdown
+                    dropdown.classList.toggle('hidden');
+                    arrow.classList.toggle('rotate-180');
+
+                    // Close other dropdowns
+                    dropdownTriggers.forEach(otherTrigger => {
+                        if (otherTrigger !== this) {
+                            const otherTargetId = otherTrigger.getAttribute('data-target');
+                            const otherDropdown = document.getElementById(otherTargetId);
+                            const otherArrow = otherTrigger.querySelector('svg');
+
+                            otherDropdown.classList.add('hidden');
+                            otherArrow.classList.remove('rotate-180');
+                        }
+                    });
+                });
+            });
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function() {
+                dropdownTriggers.forEach(trigger => {
+                    const targetId = trigger.getAttribute('data-target');
+                    const dropdown = document.getElementById(targetId);
+                    const arrow = trigger.querySelector('svg');
+
+                    dropdown.classList.add('hidden');
+                    arrow.classList.remove('rotate-180');
+                });
+            });
+
+            // Prevent dropdown from closing when clicking inside
+            document.querySelectorAll('.dropdown-content').forEach(dropdown => {
+                dropdown.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            });
+        });
+
         // Auto refresh data setiap 2 menit
         setInterval(() => {
             window.location.reload();
@@ -289,14 +470,6 @@
                 e.preventDefault();
                 window.location.href = '{{ route("laporan.export.form") }}';
             }
-        });
-
-        // Show keyboard shortcuts info
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎯 Keyboard Shortcuts:');
-            console.log('• Ctrl + N : Buat laporan baru');
-            console.log('• Ctrl + E : Export data');
-            console.log('• Auto refresh setiap 2 menit');
         });
     </script>
 </x-app-layout>

@@ -36,17 +36,19 @@ class LaporanController extends Controller
             'total_barang' => Laporan::count(),
         ];
 
-        // Statistik per satuan
+        // Statistik breakdown per satuan - DIPERBAIKI
         $statistikSatuan = [
             'masuk' => Laporan::where('jenis_laporan', 'masuk')
                         ->selectRaw('satuan, SUM(jumlah) as total')
                         ->groupBy('satuan')
-                        ->pluck('total', 'satuan')
+                        ->orderBy('total', 'desc')
+                        ->get()
                         ->toArray(),
             'keluar' => Laporan::where('jenis_laporan', 'keluar')
                          ->selectRaw('satuan, SUM(jumlah) as total')
                          ->groupBy('satuan')
-                         ->pluck('total', 'satuan')
+                         ->orderBy('total', 'desc')
+                         ->get()
                          ->toArray(),
         ];
 
