@@ -178,16 +178,6 @@
             </button>
         </form>
 
-        <!-- Additional Info -->
-        <div class="text-center pt-6 border-t border-white/20 relative z-10">
-            <p class="text-sm text-white/60">
-                Need help?
-                <a href="#" class="font-medium text-white hover:text-white/80 transition-colors duration-200">
-                    Contact support
-                </a>
-            </p>
-        </div>
-
         <!-- Decorative Elements -->
         <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-white/5 rounded-full blur-xl"></div>
         <div class="absolute -top-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-xl"></div>
