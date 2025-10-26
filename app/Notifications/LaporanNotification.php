@@ -3,13 +3,10 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\BroadcastMessage;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Models\Laporan;
 
-class LaporanNotification extends Notification implements ShouldQueue
+class LaporanNotification extends Notification
 {
     use Queueable;
 
@@ -24,30 +21,25 @@ class LaporanNotification extends Notification implements ShouldQueue
 
     public function via($notifiable)
     {
-        return ['database', 'broadcast'];
+        return ['database'];
     }
 
     public function toDatabase($notifiable)
     {
+        \Log::info('Creating database notification for user:', [
+            'user_id' => $notifiable->id,
+            'laporan_id' => $this->laporan->id,
+            'type' => $this->type
+        ]);
+
         return [
             'laporan_id' => $this->laporan->id,
             'type' => $this->type,
             'message' => $this->getMessage(),
             'user_name' => $this->laporan->user->name,
             'timestamp' => now()->toDateTimeString(),
+            'action_url' => route('laporan.show', $this->laporan->id),
         ];
-    }
-
-    public function toBroadcast($notifiable)
-    {
-        return new BroadcastMessage([
-            'id' => $this->id,
-            'type' => $this->type,
-            'message' => $this->getMessage(),
-            'laporan_id' => $this->laporan->id,
-            'user_name' => $this->laporan->user->name,
-            'created_at' => now()->toDateTimeString(),
-        ]);
     }
 
     private function getMessage()

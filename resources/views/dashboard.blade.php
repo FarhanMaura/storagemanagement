@@ -152,6 +152,18 @@
                                 </div>
                             </a>
 
+                            @if(auth()->user()->email !== 'admin@storage.com')
+                            <a href="{{ route('peminjaman.create') }}" class="flex items-center p-4 bg-orange-50 dark:bg-orange-900/30 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors group border border-orange-100 dark:border-orange-800">
+                                <div class="bg-orange-500 p-3 rounded-lg group-hover:scale-110 transition-transform">
+                                    <span class="text-white text-lg">📦</span>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="font-semibold text-gray-900 dark:text-white">Ajukan Peminjaman</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Pinjam barang yang tersedia</p>
+                                </div>
+                            </a>
+                            @endif
+
                             <a href="{{ route('statistik.index') }}" class="flex items-center p-4 bg-purple-50 dark:bg-purple-900/30 rounded-xl hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors group border border-purple-100 dark:border-purple-800">
                                 <div class="bg-purple-500 p-3 rounded-lg group-hover:scale-110 transition-transform">
                                     <span class="text-white text-lg">📈</span>
@@ -243,10 +255,10 @@
                             <div class="space-y-4">
                                 @auth
                                     @php
-                                        $recentNotifications = auth()->user()->notifications->take(4);
+                                        $recentNotifications = auth()->user()->notifications()->take(4)->get();
                                     @endphp
                                     @forelse($recentNotifications as $notification)
-                                    <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group {{ $notification->read_at ? '' : 'border-l-4 border-yellow-500' }}">
+                                    <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group {{ $notification->read_at ? '' : 'border-l-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' }}">
                                         <div class="flex justify-between items-start">
                                             <div class="flex-1">
                                                 <p class="text-sm {{ $notification->read_at ? 'text-gray-600 dark:text-gray-300' : 'text-gray-900 dark:text-white font-semibold' }}">
@@ -278,7 +290,7 @@
                                     <div class="text-center py-8">
                                         <div class="text-gray-400 text-4xl mb-2">🔔</div>
                                         <p class="text-gray-500 dark:text-gray-400 text-sm">Tidak ada notifikasi</p>
-                                        <p class="text-xs text-gray-400 mt-1">Notifikasi akan muncul di sini</p>
+                                        <p class="text-xs text-gray-400 mt-1">Notifikasi akan muncul di sini ketika ada aktivitas baru</p>
                                     </div>
                                     @endforelse
                                 @endauth
@@ -287,6 +299,42 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Peminjaman Status (Hanya untuk User Biasa) -->
+            @if(auth()->user()->email !== 'admin@storage.com')
+            <div class="mb-8">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center">
+                        <span class="w-2 h-6 bg-orange-500 rounded-full mr-3"></span>
+                        Status Peminjaman Saya
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        @php
+                            $userPeminjaman = \App\Models\Peminjaman::where('user_id', auth()->id())->get();
+                        @endphp
+                        <div class="text-center p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl border border-blue-100 dark:border-blue-800">
+                            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ $userPeminjaman->where('status', 'pending')->count() }}</div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Menunggu</p>
+                        </div>
+                        <div class="text-center p-4 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-100 dark:border-green-800">
+                            <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ $userPeminjaman->where('status', 'approved')->count() }}</div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Disetujui</p>
+                        </div>
+                        <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/30 rounded-xl border border-purple-100 dark:border-purple-800">
+                            <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ $userPeminjaman->where('status', 'returned')->count() }}</div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Dikembalikan</p>
+                        </div>
+                    </div>
+                    @if($userPeminjaman->where('status', 'approved')->count() > 0)
+                    <div class="mt-4 text-center">
+                        <a href="{{ route('peminjaman.index') }}?status=approved" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium">
+                            Lihat barang yang sedang dipinjam →
+                        </a>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @endif
 
             <!-- System Info -->
             <div class="bg-gradient-to-r from-gray-50 to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
@@ -315,6 +363,8 @@
                             <span class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 text-xs px-3 py-2 rounded-lg text-center">2FA Security</span>
                             <span class="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300 text-xs px-3 py-2 rounded-lg text-center">Notifikasi</span>
                             <span class="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 text-xs px-3 py-2 rounded-lg text-center">Export CSV</span>
+                            <span class="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-300 text-xs px-3 py-2 rounded-lg text-center">Peminjaman</span>
+                            <span class="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 text-xs px-3 py-2 rounded-lg text-center">Barcode</span>
                         </div>
                     </div>
                 </div>
@@ -340,6 +390,23 @@
                     this.style.transform = 'translateY(0)';
                 });
             });
+
+            // Add pulse animation to new notifications
+            const newNotifications = document.querySelectorAll('.border-l-4.border-yellow-500');
+            newNotifications.forEach(notification => {
+                notification.style.animation = 'pulse 2s infinite';
+            });
+
+            // Add style for pulse animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes pulse {
+                    0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+                    70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+                    100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+                }
+            `;
+            document.head.appendChild(style);
         });
     </script>
 </x-app-layout>

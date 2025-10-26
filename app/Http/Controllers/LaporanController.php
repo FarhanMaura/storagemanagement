@@ -89,10 +89,29 @@ class LaporanController extends Controller
             'user_id' => auth()->id(),
         ]);
 
-        // Kirim notifikasi ke SEMUA user termasuk pembuat (untuk testing)
-        $users = User::all();
-        foreach ($users as $user) {
-            $user->notify(new LaporanNotification($laporan, 'created'));
+        // DEBUG: Cek data sebelum kirim notifikasi
+        $users = User::where('id', '!=', auth()->id())->get();
+
+        \Log::info('Attempting to send notification to users:', [
+            'current_user_id' => auth()->id(),
+            'target_users_count' => $users->count(),
+            'target_users' => $users->pluck('id')->toArray(),
+            'laporan_id' => $laporan->id
+        ]);
+
+        try {
+            Notification::send($users, new LaporanNotification($laporan, 'created'));
+
+            \Log::info('Notification sent successfully');
+
+            // Cek apakah notifikasi benar-benar dibuat di database
+            foreach ($users as $user) {
+                $notificationCount = $user->notifications()->count();
+                \Log::info("User {$user->id} has {$notificationCount} notifications");
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to send notification: ' . $e->getMessage());
         }
 
         return redirect()->route('laporan.index')
@@ -153,11 +172,9 @@ class LaporanController extends Controller
             'lokasi' => $request->lokasi,
         ]);
 
-        // Kirim notifikasi ke SEMUA user termasuk pembuat (untuk testing)
-        $users = User::all();
-        foreach ($users as $user) {
-            $user->notify(new LaporanNotification($laporan, 'updated'));
-        }
+        // PERBAIKAN: Kirim notifikasi update
+        $users = User::where('id', '!=', auth()->id())->get();
+        Notification::send($users, new LaporanNotification($laporan, 'updated'));
 
         return redirect()->route('laporan.show', $laporan->id)
             ->with('success', 'Laporan berhasil diperbarui!');
@@ -172,11 +189,9 @@ class LaporanController extends Controller
             abort(403, 'Hanya admin yang dapat menghapus laporan.');
         }
 
-        // Kirim notifikasi delete sebelum menghapus
-        $users = User::all();
-        foreach ($users as $user) {
-            $user->notify(new LaporanNotification($laporan, 'deleted'));
-        }
+        // PERBAIKAN: Kirim notifikasi delete sebelum menghapus
+        $users = User::where('id', '!=', auth()->id())->get();
+        Notification::send($users, new LaporanNotification($laporan, 'deleted'));
 
         $laporan->delete();
 

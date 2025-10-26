@@ -5,6 +5,10 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Peminjaman;
 use App\Models\Laporan;
+use App\Models\User;
+use App\Notifications\LaporanNotification;
+use App\Notifications\PeminjamanNotification;
+use Illuminate\Support\Facades\Notification;
 use Carbon\Carbon;
 
 class PeminjamanController extends Controller
@@ -87,7 +91,7 @@ class PeminjamanController extends Controller
         // Generate kode peminjaman
         $kodePeminjaman = 'PINJ-' . date('Ymd') . '-' . str_pad(Peminjaman::count() + 1, 4, '0', STR_PAD_LEFT);
 
-        Peminjaman::create([
+        $peminjaman = Peminjaman::create([
             'kode_peminjaman' => $kodePeminjaman,
             'user_id' => auth()->id(),
             'barang_id' => $request->barang_id,
@@ -97,6 +101,10 @@ class PeminjamanController extends Controller
             'keperluan' => $request->keperluan,
             'status' => 'pending',
         ]);
+
+        // KIRIM NOTIFIKASI KE ADMIN - Ada pengajuan peminjaman baru
+        $adminUsers = User::where('email', 'admin@storage.com')->get();
+        Notification::send($adminUsers, new PeminjamanNotification($peminjaman, 'created'));
 
         return redirect()->route('peminjaman.index')
             ->with('success', 'Pengajuan peminjaman berhasil diajukan! Menunggu persetujuan admin.');
@@ -237,6 +245,9 @@ class PeminjamanController extends Controller
             'approved_at' => now(),
         ]);
 
+        // KIRIM NOTIFIKASI KE USER - Peminjaman disetujui
+        $peminjaman->user->notify(new PeminjamanNotification($peminjaman, 'approved', auth()->user()));
+
         // Buat laporan barang keluar otomatis (hanya untuk tracking)
         Laporan::create([
             'jenis_laporan' => 'keluar',
@@ -269,6 +280,9 @@ class PeminjamanController extends Controller
             'status' => 'rejected',
             'catatan_admin' => $request->catatan_admin,
         ]);
+
+        // KIRIM NOTIFIKASI KE USER - Peminjaman ditolak
+        $peminjaman->user->notify(new PeminjamanNotification($peminjaman, 'rejected', auth()->user()));
 
         return redirect()->route('peminjaman.index')
             ->with('success', 'Peminjaman berhasil ditolak.');
@@ -303,7 +317,6 @@ class PeminjamanController extends Controller
         $barangAsli->jumlah += $peminjaman->jumlah_pinjam;
         $barangAsli->save();
 
-        // === PERBAIKAN: BATAL RECORD BARANG KELUAR ===
         // Cari record barang keluar yang dibuat saat peminjaman
         $barangKeluar = Laporan::where('jenis_laporan', 'keluar')
             ->where('kode_barang', $peminjaman->barang->kode_barang)
@@ -321,13 +334,16 @@ class PeminjamanController extends Controller
             'returned_at' => now(),
         ]);
 
-        // === PERBAIKAN: BUAT LAPORAN PENGEMBALIAN TANPA MENAMBAH STOK ===
-        // Hanya untuk tracking, jumlah = 0 karena stok sudah ditambahkan ke barang asli
+        // KIRIM NOTIFIKASI KE ADMIN - Barang dikembalikan
+        $adminUsers = User::where('email', 'admin@storage.com')->get();
+        Notification::send($adminUsers, new PeminjamanNotification($peminjaman, 'returned', auth()->user()));
+
+        // Buat laporan barang masuk untuk tracking pengembalian
         Laporan::create([
             'jenis_laporan' => 'masuk',
             'kode_barang' => $peminjaman->barang->kode_barang,
             'nama_barang' => $peminjaman->barang->nama_barang,
-            'jumlah' => 0, // JADI 0 karena stok sudah ditambahkan di atas
+            'jumlah' => 0,
             'satuan' => $peminjaman->barang->satuan,
             'keterangan' => 'PENGEMBALIAN: ' . $peminjaman->kode_peminjaman . ' - ' . $peminjaman->keperluan . ' (Stok sudah dikembalikan ke inventory)',
             'lokasi' => $barangAsli->lokasi,
