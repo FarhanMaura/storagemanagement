@@ -82,16 +82,29 @@
                             <!-- Satuan -->
                             <div>
                                 <label for="satuan" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Satuan *</label>
-                                <select name="satuan" id="satuan" required
-                                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                                    <option value="">Pilih Satuan</option>
-                                    <option value="kg" {{ old('satuan') == 'kg' ? 'selected' : '' }}>Kilogram (kg)</option>
-                                    <option value="ton" {{ old('satuan') == 'ton' ? 'selected' : '' }}>Ton</option>
-                                    <option value="bal" {{ old('satuan') == 'bal' ? 'selected' : '' }}>Bal</option>
-                                    <option value="karung" {{ old('satuan') == 'karung' ? 'selected' : '' }}>Karung</option>
-                                    <option value="unit" {{ old('satuan') == 'unit' ? 'selected' : '' }}>Unit</option>
-                                    <option value="lembar" {{ old('satuan') == 'lembar' ? 'selected' : '' }}>Lembar</option>
-                                </select>
+                                <div class="relative">
+                                    <input type="text" name="satuan" id="satuan" list="satuanList"
+                                        value="{{ old('satuan') }}"
+                                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                        placeholder="Ketik atau pilih satuan..." required>
+
+                                    <datalist id="satuanList">
+                                        @foreach($satuans as $satuan)
+                                            <option value="{{ $satuan }}">
+                                        @endforeach
+                                    </datalist>
+
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+                                    💡 Ketik satuan baru atau pilih dari daftar. Satuan baru akan tersimpan otomatis.
+                                </p>
+
                                 @error('satuan')
                                     <p class="text-red-500 text-xs mt-2">{{ $message }}</p>
                                 @enderror

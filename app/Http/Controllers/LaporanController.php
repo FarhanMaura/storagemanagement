@@ -61,8 +61,25 @@ class LaporanController extends Controller
 
     public function create()
     {
+        // Ambil semua satuan unik dari database untuk dropdown
+        $satuans = Laporan::select('satuan')
+            ->distinct()
+            ->whereNotNull('satuan')
+            ->where('satuan', '!=', '')
+            ->orderBy('satuan')
+            ->pluck('satuan')
+            ->toArray();
+
+        // Satuan default yang selalu ada
+        $defaultSatuans = ['kg', 'ton', 'bal', 'karung', 'unit', 'lembar'];
+
+        // Gabungkan dan hapus duplikat
+        $allSatuans = array_unique(array_merge($defaultSatuans, $satuans));
+        sort($allSatuans);
+
         return view('laporan.create', [
-            'title' => 'Buat Laporan Baru'
+            'title' => 'Buat Laporan Baru',
+            'satuans' => $allSatuans
         ]);
     }
 
@@ -137,9 +154,26 @@ class LaporanController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        // Ambil semua satuan unik dari database untuk dropdown
+        $satuans = Laporan::select('satuan')
+            ->distinct()
+            ->whereNotNull('satuan')
+            ->where('satuan', '!=', '')
+            ->orderBy('satuan')
+            ->pluck('satuan')
+            ->toArray();
+
+        // Satuan default yang selalu ada
+        $defaultSatuans = ['kg', 'ton', 'bal', 'karung', 'unit', 'lembar'];
+
+        // Gabungkan dan hapus duplikat
+        $allSatuans = array_unique(array_merge($defaultSatuans, $satuans));
+        sort($allSatuans);
+
         return view('laporan.edit', [
             'laporan' => $laporan,
-            'title' => 'Edit Laporan'
+            'title' => 'Edit Laporan',
+            'satuans' => $allSatuans
         ]);
     }
 
