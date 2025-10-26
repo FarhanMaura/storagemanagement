@@ -169,6 +169,49 @@
             </p>
         </div>
 
+        <!-- Reset 2FA Section -->
+@if(Auth::user()->is2FAEnabled())
+<div class="mt-6 p-4 border border-red-200 rounded-lg bg-red-50 dark:bg-red-900/20 dark:border-red-700" style="position: relative; z-index: 1000;">
+    <div class="flex items-center mb-2">
+        <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 mr-2"></i>
+        <h4 class="font-semibold text-red-800 dark:text-red-300">Kehilangan Akses?</h4>
+    </div>
+    <p class="text-red-700 dark:text-red-400 text-sm mb-3">
+        Jika Anda kehilangan akses ke authenticator app, reset 2FA untuk generate QR code baru.
+    </p>
+    <form action="{{ route('2fa.reset') }}" method="POST" id="reset2FAForm">
+        @csrf
+        <button type="submit"
+                class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition duration-150 text-sm w-full cursor-pointer"
+                style="position: relative; z-index: 1001; pointer-events: auto;">
+            <i class="fas fa-redo mr-2"></i>Reset 2FA & Generate QR Baru
+        </button>
+    </form>
+</div>
+
+<script>
+    // Reset 2FA confirmation - versi lebih aggressive
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('reset2FAForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!confirm('Yakin ingin reset 2FA? Anda harus setup ulang dengan authenticator app.')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+            });
+
+            // Force button to be clickable
+            const button = form.querySelector('button');
+            button.style.pointerEvents = 'auto';
+            button.style.position = 'relative';
+            button.style.zIndex = '1001';
+        }
+    });
+</script>
+@endif
+
         <!-- Instructions -->
         <div class="mt-4 sm:mt-6 p-3 sm:p-4 lg:p-6 glass-effect rounded-xl sm:rounded-2xl border border-white/20 relative z-10">
             <div class="flex flex-col sm:flex-row sm:items-start space-y-3 sm:space-y-0 sm:space-x-3">

@@ -25,6 +25,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/2fa/verify', [TwoFactorController::class, 'show2FAVerify'])->name('2fa.verify');
     Route::post('/2fa/verify', [TwoFactorController::class, 'verify2FA'])->name('2fa.verify.post');
     Route::post('/2fa/disable', [TwoFactorController::class, 'disable2FA'])->name('2fa.disable');
+    Route::post('/2fa/reset', [TwoFactorController::class, 'reset2FA'])->name('2fa.reset');
 });
 
 // Routes Laporan - CRUD Lengkap

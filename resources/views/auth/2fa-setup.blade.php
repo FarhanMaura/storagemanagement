@@ -91,6 +91,16 @@
             <p class="mt-1 sm:mt-2 text-white/80 text-xs sm:text-sm">Scan QR code dengan aplikasi authenticator</p>
         </div>
 
+        <!-- Success Message -->
+        @if(session('success'))
+            <div class="mb-4 p-4 bg-green-100 border border-green-400 rounded-lg dark:bg-green-900/20 dark:border-green-700">
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-600 dark:text-green-400 mr-2"></i>
+                    <span class="text-green-800 dark:text-green-300 font-semibold">{{ session('success') }}</span>
+                </div>
+            </div>
+        @endif
+
         <!-- QR Code Section -->
         <div class="text-center mb-4 sm:mb-6 relative z-10">
             <div class="glass-effect p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-2xl inline-block qr-glow border border-white/30 max-w-full">

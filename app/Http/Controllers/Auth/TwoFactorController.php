@@ -89,4 +89,25 @@ class TwoFactorController extends Controller
 
         return redirect()->route('dashboard')->with('success', '2FA berhasil dinonaktifkan.');
     }
+
+    public function reset2FA()
+    {
+        $user = Auth::user();
+
+        // Generate new secret key
+        $google2fa = app('pragmarx.google2fa');
+        $newSecret = $google2fa->generateSecretKey();
+
+        // Update user dengan secret baru
+        $user->google2fa_secret = $newSecret;
+        $user->save();
+
+        // Clear 2FA session (wajib!)
+        session()->forget('2fa_verified');
+
+        // Redirect ke setup dengan pesan success
+        return redirect()->route('2fa.setup')->with([
+            'success' => '2FA berhasil direset! Scan QR code baru dengan aplikasi authenticator Anda.'
+        ]);
+    }
 }
