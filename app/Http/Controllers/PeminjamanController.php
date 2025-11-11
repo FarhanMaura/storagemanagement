@@ -353,9 +353,16 @@ class PeminjamanController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
+        $user = auth()->user();
+
         return view('peminjaman.show', [
             'peminjaman' => $peminjaman,
             'title' => 'Detail Peminjaman',
+            'isAdmin' => $user->isAdmin(),
+            'isPetugasPengajuan' => $user->isPetugasPengajuan(),
+            'isManajerPersetujuan' => $user->isManajerPersetujuan(),
+            'isPetugasBarangKeluar' => $user->isPetugasBarangKeluar(),
+            'currentUser' => $user,
         ]);
     }
 

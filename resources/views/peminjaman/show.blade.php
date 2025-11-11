@@ -21,7 +21,7 @@
                                    class="bg-white/20 backdrop-blur-sm text-white px-4 py-2 rounded-lg hover:bg-white/30 transition-all duration-300 border border-white/30">
                                     ← Kembali
                                 </a>
-                                @if(!$isAdmin && $peminjaman->status === 'pending')
+                                @if(!$isAdmin && $peminjaman->status === 'pending' && $peminjaman->user_id === auth()->id())
                                     <a href="{{ route('peminjaman.edit', $peminjaman->id) }}"
                                        class="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition-all duration-300 font-semibold">
                                         Edit
@@ -168,10 +168,48 @@
                                         <p class="text-purple-800 dark:text-purple-200 font-semibold">{{ $peminjaman->created_at->format('d F Y H:i') }}</p>
                                     </div>
 
-                                    @if($peminjaman->approved_at)
+                                    @if($peminjaman->validated_by && $peminjaman->validatedBy)
                                     <div>
-                                        <label class="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Disetujui Pada</label>
-                                        <p class="text-purple-800 dark:text-purple-200 font-semibold">{{ $peminjaman->approved_at->format('d F Y H:i') }}</p>
+                                        <label class="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Divalidasi Oleh</label>
+                                        <div class="flex items-center">
+                                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                                                {{ strtoupper(substr($peminjaman->validatedBy->name, 0, 1)) }}
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-purple-800 dark:text-purple-200">{{ $peminjaman->validatedBy->name }}</p>
+                                                <p class="text-sm text-purple-600 dark:text-purple-300">{{ $peminjaman->validated_at->format('d F Y H:i') }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endif
+
+                                    @if($peminjaman->approved_by && $peminjaman->approvedBy)
+                                    <div>
+                                        <label class="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Disetujui Oleh</label>
+                                        <div class="flex items-center">
+                                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                                                {{ strtoupper(substr($peminjaman->approvedBy->name, 0, 1)) }}
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-purple-800 dark:text-purple-200">{{ $peminjaman->approvedBy->name }}</p>
+                                                <p class="text-sm text-purple-600 dark:text-purple-300">{{ $peminjaman->approved_at->format('d F Y H:i') }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endif
+
+                                    @if($peminjaman->completed_by && $peminjaman->completedBy)
+                                    <div>
+                                        <label class="block text-sm font-medium text-purple-700 dark:text-purple-300 mb-1">Diproses Oleh</label>
+                                        <div class="flex items-center">
+                                            <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold mr-3">
+                                                {{ strtoupper(substr($peminjaman->completedBy->name, 0, 1)) }}
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-purple-800 dark:text-purple-200">{{ $peminjaman->completedBy->name }}</p>
+                                                <p class="text-sm text-purple-600 dark:text-purple-300">{{ $peminjaman->completed_at->format('d F Y H:i') }}</p>
+                                            </div>
+                                        </div>
                                     </div>
                                     @endif
 
@@ -187,11 +225,21 @@
                     </div>
 
                     <!-- Action Buttons -->
-                    @if($isAdmin)
+                    @if($isAdmin || $isPetugasPengajuan || $isManajerPersetujuan || $isPetugasBarangKeluar)
                     <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600">
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Aksi Admin</h3>
-                        <div class="flex space-x-4">
-                            @if($peminjaman->status === 'pending')
+                        <div class="flex flex-wrap gap-4">
+                            @if($isPetugasPengajuan && $peminjaman->status === 'pending')
+                                <a href="{{ route('peminjaman.validate.form', $peminjaman->id) }}"
+                                   class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105 font-semibold flex items-center">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Validasi Pengajuan
+                                </a>
+                            @endif
+
+                            @if($isManajerPersetujuan && $peminjaman->status === 'validated')
                                 <form action="{{ route('peminjaman.approve', $peminjaman->id) }}" method="POST" class="inline">
                                     @csrf
                                     <button type="submit"
@@ -203,6 +251,7 @@
                                         Setujui
                                     </button>
                                 </form>
+
                                 <button onclick="showRejectForm()"
                                         class="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition-all duration-300 hover:scale-105 font-semibold flex items-center">
                                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,10 +260,39 @@
                                     Tolak
                                 </button>
                             @endif
+
+                            @if($isPetugasBarangKeluar && $peminjaman->status === 'approved')
+                                <form action="{{ route('peminjaman.process-barang-keluar', $peminjaman->id) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="submit"
+                                            class="bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition-all duration-300 hover:scale-105 font-semibold flex items-center"
+                                            onclick="return confirm('Proses barang keluar? Stok akan dikurangi.')">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                        </svg>
+                                        Proses Barang Keluar
+                                    </button>
+                                </form>
+                            @endif
+
+                            @if($isAdmin)
+                                <form action="{{ route('peminjaman.destroy', $peminjaman->id) }}" method="POST" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            class="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition-all duration-300 hover:scale-105 font-semibold flex items-center"
+                                            onclick="return confirm('Hapus permanen peminjaman ini?')">
+                                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                        Hapus Permanen
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     </div>
                     @else
-                        @if($peminjaman->status === 'approved')
+                        @if($peminjaman->status === 'completed' && $peminjaman->user_id === auth()->id())
                         <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600">
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Aksi Pengembalian</h3>
                             <form action="{{ route('peminjaman.return', $peminjaman->id) }}" method="POST" class="inline">
@@ -240,7 +318,7 @@
     </div>
 
     <!-- Reject Modal -->
-    @if($isAdmin && $peminjaman->status === 'pending')
+    @if($isManajerPersetujuan && $peminjaman->status === 'validated')
     <div id="rejectModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center z-50">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 max-w-md w-full mx-4">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Tolak Pengajuan Peminjaman</h3>
