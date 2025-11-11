@@ -14,12 +14,34 @@ class DatabaseSeeder extends Seeder
             'name' => 'Admin Storage',
             'email' => 'admin@storage.com',
             'password' => bcrypt('password123'),
-            'google2fa_secret' => null, // Pastikan null dulu
+            'google2fa_secret' => null,
         ]);
 
         User::factory()->create([
             'name' => 'User Biasa',
             'email' => 'user@storage.com',
+            'password' => bcrypt('password123'),
+            'google2fa_secret' => null,
+        ]);
+
+        // TAMBAH 3 ROLE ADMIN BARU
+        User::factory()->create([
+            'name' => 'Petugas Pengajuan',
+            'email' => 'admin1@storage.com',
+            'password' => bcrypt('password123'),
+            'google2fa_secret' => null,
+        ]);
+
+        User::factory()->create([
+            'name' => 'Manajer Persetujuan',
+            'email' => 'admin2@storage.com',
+            'password' => bcrypt('password123'),
+            'google2fa_secret' => null,
+        ]);
+
+        User::factory()->create([
+            'name' => 'Petugas Barang Keluar',
+            'email' => 'admin3@storage.com',
             'password' => bcrypt('password123'),
             'google2fa_secret' => null,
         ]);

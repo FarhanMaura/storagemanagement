@@ -22,7 +22,7 @@
 
     <!-- Navigation Menu -->
     <nav class="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
-        <!-- Dashboard -->
+        <!-- Dashboard - SEMUA ROLE -->
         <a href="{{ route('dashboard') }}"
            class="flex items-center px-3 py-3 rounded-lg transition duration-200 group {{ request()->routeIs('dashboard') ? 'bg-blue-600 text-white shadow-md' : 'text-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md' }}">
             <span class="w-8 h-8 flex items-center justify-center text-lg transition-all duration-300">📊</span>
@@ -32,48 +32,108 @@
             </span>
         </a>
 
-        <!-- Laporan -->
-        <a href="{{ route('laporan.index') }}"
-           class="flex items-center px-3 py-3 rounded-lg transition duration-200 group {{ request()->routeIs('laporan.*') ? 'bg-blue-600 text-white shadow-md' : 'text-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md' }}">
-            <span class="w-8 h-8 flex items-center justify-center text-lg transition-all duration-300">📋</span>
-            <span class="ml-3 font-medium whitespace-nowrap transition-all duration-300 lg:opacity-100 lg:block">Laporan</span>
-            <span class="lg:hidden ml-2 px-2 py-1 text-xs bg-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                Laporan
-            </span>
-        </a>
+        <!-- ==================== MENU BERDASARKAN ROLE ==================== -->
 
-        <!-- Barcode -->
-        <a href="{{ route('barcode.index') }}"
-           class="flex items-center px-3 py-3 rounded-lg transition duration-200 group {{ request()->routeIs('barcode.*') ? 'bg-blue-600 text-white shadow-md' : 'text-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md' }}">
-            <span class="w-8 h-8 flex items-center justify-center text-lg transition-all duration-300">🏷️</span>
-            <span class="ml-3 font-medium whitespace-nowrap transition-all duration-300 lg:opacity-100 lg:block">Barcode</span>
-            <span class="lg:hidden ml-2 px-2 py-1 text-xs bg-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                Barcode
-            </span>
-        </a>
+        <!-- USER & MAIN ADMIN - Akses semua menu -->
+        @auth
+            @if(auth()->user()->isUser() || auth()->user()->isAdmin())
+            <!-- Laporan -->
+            <a href="{{ route('laporan.index') }}"
+               class="flex items-center px-3 py-3 rounded-lg transition duration-200 group {{ request()->routeIs('laporan.*') ? 'bg-blue-600 text-white shadow-md' : 'text-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md' }}">
+                <span class="w-8 h-8 flex items-center justify-center text-lg transition-all duration-300">📋</span>
+                <span class="ml-3 font-medium whitespace-nowrap transition-all duration-300 lg:opacity-100 lg:block">Laporan</span>
+                <span class="lg:hidden ml-2 px-2 py-1 text-xs bg-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                    Laporan
+                </span>
+            </a>
 
-        <!-- Statistik -->
-        <a href="{{ route('statistik.index') }}"
-           class="flex items-center px-3 py-3 rounded-lg transition duration-200 group {{ request()->routeIs('statistik.*') ? 'bg-blue-600 text-white shadow-md' : 'text-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md' }}">
-            <span class="w-8 h-8 flex items-center justify-center text-lg transition-all duration-300">📈</span>
-            <span class="ml-3 font-medium whitespace-nowrap transition-all duration-300 lg:opacity-100 lg:block">Statistik</span>
-            <span class="lg:hidden ml-2 px-2 py-1 text-xs bg-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                Statistik
-            </span>
-        </a>
+            <!-- Barcode -->
+            <a href="{{ route('barcode.index') }}"
+               class="flex items-center px-3 py-3 rounded-lg transition duration-200 group {{ request()->routeIs('barcode.*') ? 'bg-blue-600 text-white shadow-md' : 'text-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md' }}">
+                <span class="w-8 h-8 flex items-center justify-center text-lg transition-all duration-300">🏷️</span>
+                <span class="ml-3 font-medium whitespace-nowrap transition-all duration-300 lg:opacity-100 lg:block">Barcode</span>
+                <span class="lg:hidden ml-2 px-2 py-1 text-xs bg-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                    Barcode
+                </span>
+            </a>
 
-        <!-- Peminjaman -->
-        <a href="{{ route('peminjaman.index') }}"
-           class="flex items-center px-3 py-3 rounded-lg transition duration-200 group {{ request()->routeIs('peminjaman.*') ? 'bg-blue-600 text-white shadow-md' : 'text-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md' }}">
-            <span class="w-8 h-8 flex items-center justify-center text-lg transition-all duration-300">📦</span>
-            <span class="ml-3 font-medium whitespace-nowrap transition-all duration-300 lg:opacity-100 lg:block">Peminjaman</span>
-            <span class="lg:hidden ml-2 px-2 py-1 text-xs bg-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                Peminjaman
-            </span>
-        </a>
+            <!-- Statistik -->
+            <a href="{{ route('statistik.index') }}"
+               class="flex items-center px-3 py-3 rounded-lg transition duration-200 group {{ request()->routeIs('statistik.*') ? 'bg-blue-600 text-white shadow-md' : 'text-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md' }}">
+                <span class="w-8 h-8 flex items-center justify-center text-lg transition-all duration-300">📈</span>
+                <span class="ml-3 font-medium whitespace-nowrap transition-all duration-300 lg:opacity-100 lg:block">Statistik</span>
+                <span class="lg:hidden ml-2 px-2 py-1 text-xs bg-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                    Statistik
+                </span>
+            </a>
+
+            <!-- Peminjaman -->
+            <a href="{{ route('peminjaman.index') }}"
+               class="flex items-center px-3 py-3 rounded-lg transition duration-200 group {{ request()->routeIs('peminjaman.*') ? 'bg-blue-600 text-white shadow-md' : 'text-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md' }}">
+                <span class="w-8 h-8 flex items-center justify-center text-lg transition-all duration-300">📦</span>
+                <span class="ml-3 font-medium whitespace-nowrap transition-all duration-300 lg:opacity-100 lg:block">
+                    {{ auth()->user()->isUser() ? 'Peminjaman Saya' : 'Management Peminjaman' }}
+                </span>
+                <span class="lg:hidden ml-2 px-2 py-1 text-xs bg-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                    {{ auth()->user()->isUser() ? 'Peminjaman Saya' : 'Management Peminjaman' }}
+                </span>
+            </a>
+            @endif
+        @endauth
+
+        <!-- Hanya PETUGAS PENGELOLA PENGAJUAN (Admin1) -->
+        @auth
+            @if(auth()->user()->isPetugasPengajuan())
+            <a href="{{ route('peminjaman.index') }}"
+               class="flex items-center px-3 py-3 rounded-lg transition duration-200 group {{ request()->routeIs('peminjaman.*') ? 'bg-blue-600 text-white shadow-md' : 'text-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md' }}">
+                <span class="w-8 h-8 flex items-center justify-center text-lg transition-all duration-300">🧾</span>
+                <span class="ml-3 font-medium whitespace-nowrap transition-all duration-300 lg:opacity-100 lg:block">Validasi Pengajuan</span>
+                <span class="lg:hidden ml-2 px-2 py-1 text-xs bg-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                    Validasi Pengajuan
+                </span>
+            </a>
+            @endif
+        @endauth
+
+        <!-- Hanya MANAJER PERSETUJUAN (Admin2) -->
+        @auth
+            @if(auth()->user()->isManajerPersetujuan())
+            <a href="{{ route('peminjaman.index') }}"
+               class="flex items-center px-3 py-3 rounded-lg transition duration-200 group {{ request()->routeIs('peminjaman.*') ? 'bg-blue-600 text-white shadow-md' : 'text-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md' }}">
+                <span class="w-8 h-8 flex items-center justify-center text-lg transition-all duration-300">🧑‍💼</span>
+                <span class="ml-3 font-medium whitespace-nowrap transition-all duration-300 lg:opacity-100 lg:block">Persetujuan Peminjaman</span>
+                <span class="lg:hidden ml-2 px-2 py-1 text-xs bg-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                    Persetujuan Peminjaman
+                </span>
+            </a>
+            @endif
+        @endauth
+
+        <!-- Hanya PETUGAS BARANG KELUAR (Admin3) -->
+        @auth
+            @if(auth()->user()->isPetugasBarangKeluar())
+            <a href="{{ route('peminjaman.index') }}"
+               class="flex items-center px-3 py-3 rounded-lg transition duration-200 group {{ request()->routeIs('peminjaman.*') ? 'bg-blue-600 text-white shadow-md' : 'text-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md' }}">
+                <span class="w-8 h-8 flex items-center justify-center text-lg transition-all duration-300">📦</span>
+                <span class="ml-3 font-medium whitespace-nowrap transition-all duration-300 lg:opacity-100 lg:block">Proses Barang Keluar</span>
+                <span class="lg:hidden ml-2 px-2 py-1 text-xs bg-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                    Proses Barang Keluar
+                </span>
+            </a>
+
+            <a href="{{ route('laporan.index') }}"
+               class="flex items-center px-3 py-3 rounded-lg transition duration-200 group {{ request()->routeIs('laporan.*') ? 'bg-blue-600 text-white shadow-md' : 'text-blue-100 hover:bg-blue-600 hover:text-white hover:shadow-md' }}">
+                <span class="w-8 h-8 flex items-center justify-center text-lg transition-all duration-300">📋</span>
+                <span class="ml-3 font-medium whitespace-nowrap transition-all duration-300 lg:opacity-100 lg:block">Laporan Barang</span>
+                <span class="lg:hidden ml-2 px-2 py-1 text-xs bg-blue-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                    Laporan Barang
+                </span>
+            </a>
+            @endif
+        @endauth
     </nav>
 
-    <!-- Notifications Section -->
+    <!-- Notifications Section - SEMUA ROLE -->
     <div class="px-3 py-4 border-t border-blue-600 flex-shrink-0">
         <div class="relative" x-data="{ open: false }">
             <button @click="open = !open"
@@ -171,7 +231,7 @@
         </div>
     </div>
 
-    <!-- User Section -->
+    <!-- User Section - SEMUA ROLE -->
     <div class="p-3 border-t border-blue-600 bg-blue-700 flex-shrink-0">
         <div class="flex items-center space-x-3 mb-3">
             <div class="w-10 h-10 bg-white text-blue-700 rounded-full flex items-center justify-center text-sm font-bold shadow-md flex-shrink-0">
@@ -180,6 +240,7 @@
             <div class="flex-1 min-w-0 transition-all duration-300 lg:opacity-100 lg:block">
                 <p class="text-sm font-medium text-white truncate">{{ auth()->user()->name }}</p>
                 <p class="text-xs text-blue-200 truncate">{{ auth()->user()->email }}</p>
+                <p class="text-xs text-blue-300 truncate">{{ auth()->user()->getRoleName() }}</p>
             </div>
         </div>
 

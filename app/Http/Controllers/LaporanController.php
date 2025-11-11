@@ -15,6 +15,9 @@ class LaporanController extends Controller
 {
     public function index(Request $request)
     {
+        // SEMUA USER bisa akses laporan (User, Admin1, Admin2, Admin3, Main Admin)
+        // Tidak perlu restriction
+
         $search = $request->get('search');
 
         $query = Laporan::with('user')->orderBy('created_at', 'desc');
@@ -63,6 +66,9 @@ class LaporanController extends Controller
 
     public function create()
     {
+        // SEMUA USER bisa buat laporan
+        // Tidak perlu restriction
+
         // Ambil semua satuan unik dari database untuk dropdown
         $satuans = Laporan::select('satuan')
             ->distinct()
@@ -87,6 +93,9 @@ class LaporanController extends Controller
 
     public function store(Request $request)
     {
+        // SEMUA USER bisa buat laporan
+        // Tidak perlu restriction
+
         $request->validate([
             'jenis_laporan' => 'required|in:masuk,keluar',
             'kode_barang' => 'required|string|max:50',
@@ -139,6 +148,9 @@ class LaporanController extends Controller
 
     public function show($id)
     {
+        // SEMUA USER bisa lihat detail laporan
+        // Tidak perlu restriction
+
         $laporan = Laporan::with('user')->findOrFail($id);
 
         return view('laporan.show', [
@@ -152,7 +164,7 @@ class LaporanController extends Controller
         $laporan = Laporan::findOrFail($id);
 
         // Cek apakah user yang membuat laporan atau admin
-        if ($laporan->user_id !== auth()->id() && auth()->user()->email !== 'admin@storage.com') {
+        if ($laporan->user_id !== auth()->id() && !auth()->user()->isAdmin()) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -184,7 +196,7 @@ class LaporanController extends Controller
         $laporan = Laporan::findOrFail($id);
 
         // Cek authorization
-        if ($laporan->user_id !== auth()->id() && auth()->user()->email !== 'admin@storage.com') {
+        if ($laporan->user_id !== auth()->id() && !auth()->user()->isAdmin()) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -220,8 +232,8 @@ class LaporanController extends Controller
     {
         $laporan = Laporan::findOrFail($id);
 
-        // Hanya admin yang bisa hapus
-        if (auth()->user()->email !== 'admin@storage.com') {
+        // Hanya Main Admin yang bisa hapus laporan
+        if (!auth()->user()->isAdmin()) {
             abort(403, 'Hanya admin yang dapat menghapus laporan.');
         }
 
@@ -240,6 +252,9 @@ class LaporanController extends Controller
      */
     public function exportCSV(Request $request)
     {
+        // SEMUA USER bisa export
+        // Tidak perlu restriction
+
         $search = $request->get('search');
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
@@ -328,6 +343,9 @@ class LaporanController extends Controller
      */
     public function exportExcel(Request $request)
     {
+        // SEMUA USER bisa export
+        // Tidak perlu restriction
+
         $search = $request->get('search');
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
@@ -342,6 +360,9 @@ class LaporanController extends Controller
      */
     public function showExportForm()
     {
+        // SEMUA USER bisa export
+        // Tidak perlu restriction
+
         return view('laporan.export', [
             'title' => 'Export Laporan'
         ]);
@@ -352,6 +373,9 @@ class LaporanController extends Controller
      */
     public function getStatistics()
     {
+        // SEMUA USER bisa akses API
+        // Tidak perlu restriction
+
         $totalMasuk = Laporan::where('jenis_laporan', 'masuk')->sum('jumlah');
         $totalKeluar = Laporan::where('jenis_laporan', 'keluar')->sum('jumlah');
         $totalLaporan = Laporan::count();
@@ -374,6 +398,9 @@ class LaporanController extends Controller
      */
     public function getStatisticsBySatuan($jenis, $satuan = null)
     {
+        // SEMUA USER bisa akses API
+        // Tidak perlu restriction
+
         $query = Laporan::where('jenis_laporan', $jenis);
 
         if ($satuan) {

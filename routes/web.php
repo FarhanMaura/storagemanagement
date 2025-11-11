@@ -48,7 +48,7 @@ Route::middleware(['auth', '2fa'])->group(function () {
     Route::get('/laporan/statistik/{jenis}/{satuan}', [LaporanController::class, 'getStatisticsBySatuan'])->name('laporan.statistik.satuan');
 });
 
-// Routes Peminjaman
+// Routes Peminjaman - DENGAN WORKFLOW BARU
 Route::middleware(['auth', '2fa'])->group(function () {
     Route::get('/peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
     Route::get('/peminjaman/create', [PeminjamanController::class, 'create'])->name('peminjaman.create');
@@ -57,8 +57,14 @@ Route::middleware(['auth', '2fa'])->group(function () {
     Route::get('/peminjaman/{id}/edit', [PeminjamanController::class, 'edit'])->name('peminjaman.edit');
     Route::put('/peminjaman/{id}', [PeminjamanController::class, 'update'])->name('peminjaman.update');
     Route::delete('/peminjaman/{id}', [PeminjamanController::class, 'destroy'])->name('peminjaman.destroy');
+
+    // WORKFLOW BARU - MULTI LEVEL APPROVAL
+    Route::get('/peminjaman/{id}/validate-form', [PeminjamanController::class, 'showValidationForm'])->name('peminjaman.validate.form');
+    Route::post('/peminjaman/{id}/validate-process', [PeminjamanController::class, 'processValidation'])->name('peminjaman.validate.process');
+    Route::get('/peminjaman/{id}/validation-details', [PeminjamanController::class, 'showValidationDetails'])->name('peminjaman.validation.details');
     Route::post('/peminjaman/{id}/approve', [PeminjamanController::class, 'approve'])->name('peminjaman.approve');
     Route::post('/peminjaman/{id}/reject', [PeminjamanController::class, 'reject'])->name('peminjaman.reject');
+    Route::post('/peminjaman/{id}/process', [PeminjamanController::class, 'processBarangKeluar'])->name('peminjaman.process');
     Route::post('/peminjaman/{id}/return', [PeminjamanController::class, 'return'])->name('peminjaman.return');
 });
 

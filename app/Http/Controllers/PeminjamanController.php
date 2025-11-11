@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use App\Models\Peminjaman;
 use App\Models\Laporan;
 use App\Models\User;
-use App\Notifications\LaporanNotification;
 use App\Notifications\PeminjamanNotification;
 use Illuminate\Support\Facades\Notification;
 use Carbon\Carbon;
@@ -17,43 +16,281 @@ class PeminjamanController extends Controller
     {
         $query = Peminjaman::with(['user', 'barang']);
 
-        // Filter berdasarkan role user
-        if (auth()->user()->email !== 'admin@storage.com') {
-            $query->where('user_id', auth()->id());
+        $user = auth()->user();
+
+        // FILTER OTOMATIS BERDASARKAN ROLE
+        if ($user->isUser()) {
+            $query->where('user_id', $user->id);
+        } elseif ($user->isPetugasPengajuan()) {
+            $query->where('status', 'pending');
+        } elseif ($user->isManajerPersetujuan()) {
+            $query->where('status', 'validated');
+        } elseif ($user->isPetugasBarangKeluar()) {
+            $query->where('status', 'approved');
         }
 
-        // Filter berdasarkan status
         if ($request->has('status') && $request->status) {
             $query->where('status', $request->status);
         }
 
         $peminjaman = $query->orderBy('created_at', 'desc')->paginate(10);
 
+        $baseQuery = Peminjaman::query();
+        if ($user->isUser()) {
+            $baseQuery->where('user_id', $user->id);
+        } elseif ($user->isPetugasPengajuan()) {
+            $baseQuery->where('status', 'pending');
+        } elseif ($user->isManajerPersetujuan()) {
+            $baseQuery->where('status', 'validated');
+        } elseif ($user->isPetugasBarangKeluar()) {
+            $baseQuery->where('status', 'approved');
+        }
+
         $statistik = [
-            'total' => Peminjaman::when(auth()->user()->email !== 'admin@storage.com',
-                fn($q) => $q->where('user_id', auth()->id()))->count(),
-            'pending' => Peminjaman::when(auth()->user()->email !== 'admin@storage.com',
-                fn($q) => $q->where('user_id', auth()->id()))->pending()->count(),
-            'approved' => Peminjaman::when(auth()->user()->email !== 'admin@storage.com',
-                fn($q) => $q->where('user_id', auth()->id()))->approved()->count(),
+            'total' => $baseQuery->count(),
+            'pending' => $baseQuery->clone()->where('status', 'pending')->count(),
+            'validated' => $baseQuery->clone()->where('status', 'validated')->count(),
+            'approved' => $baseQuery->clone()->where('status', 'approved')->count(),
+            'completed' => $baseQuery->clone()->where('status', 'completed')->count(),
+            'returned' => $baseQuery->clone()->where('status', 'returned')->count(),
+            'rejected' => $baseQuery->clone()->where('status', 'rejected')->count(),
         ];
 
         return view('peminjaman.index', [
             'peminjaman' => $peminjaman,
             'statistik' => $statistik,
-            'title' => 'Pengajuan Peminjaman Barang',
-            'isAdmin' => auth()->user()->email === 'admin@storage.com'
+            'title' => $this->getPageTitle($user),
         ]);
     }
 
-    public function create()
+    private function getPageTitle($user)
     {
-        // Hanya user biasa yang bisa mengajukan peminjaman
-        if (auth()->user()->email === 'admin@storage.com') {
-            abort(403, 'Admin tidak dapat mengajukan peminjaman.');
+        if ($user->isUser()) return 'Peminjaman Saya';
+        if ($user->isPetugasPengajuan()) return 'Validasi Pengajuan Barang';
+        if ($user->isManajerPersetujuan()) return 'Persetujuan Peminjaman';
+        if ($user->isPetugasBarangKeluar()) return 'Proses Barang Keluar';
+        return 'Management Peminjaman';
+    }
+
+    /**
+     * Show validation form for Admin 1
+     */
+    public function showValidationForm($id)
+    {
+        if (!auth()->user()->isPetugasPengajuan()) {
+            abort(403, 'Hanya Petugas Pengajuan yang dapat memvalidasi.');
         }
 
-        // Hanya ambil barang dengan jenis 'masuk' dan jumlah > 0
+        $peminjaman = Peminjaman::with('barang')->findOrFail($id);
+
+        if ($peminjaman->status !== 'pending') {
+            return redirect()->back()->with('error', 'Hanya pengajuan pending yang dapat divalidasi.');
+        }
+
+        $stokTersedia = Laporan::where('kode_barang', $peminjaman->barang->kode_barang)
+            ->where('jenis_laporan', 'masuk')
+            ->where('jumlah', '>', 0)
+            ->get();
+
+        $totalStok = $stokTersedia->sum('jumlah');
+        $cukup = $totalStok >= $peminjaman->jumlah_pinjam;
+
+        return view('peminjaman.validation-form', [
+            'peminjaman' => $peminjaman,
+            'stokTersedia' => $stokTersedia,
+            'totalStok' => $totalStok,
+            'cukup' => $cukup,
+            'title' => 'Validasi Pengajuan Barang'
+        ]);
+    }
+
+    /**
+     * Process validation by Admin 1
+     */
+    public function processValidation(Request $request, $id)
+    {
+        if (!auth()->user()->isPetugasPengajuan()) {
+            abort(403, 'Hanya Petugas Pengajuan yang dapat memvalidasi.');
+        }
+
+        $request->validate([
+            'status_validasi' => 'required|in:tersedia,tidak_tersedia',
+            'catatan_validasi' => 'nullable|string|max:500',
+        ]);
+
+        $peminjaman = Peminjaman::with('barang')->findOrFail($id);
+
+        if ($peminjaman->status !== 'pending') {
+            return redirect()->back()->with('error', 'Hanya pengajuan pending yang dapat divalidasi.');
+        }
+
+        $status = $request->status_validasi === 'tersedia' ? 'validated' : 'rejected';
+        $catatan = $request->catatan_validasi ?:
+            ($request->status_validasi === 'tersedia' ? '✅ Barang tersedia' : '❌ Barang tidak tersedia');
+
+        $peminjaman->update([
+            'status' => $status,
+            'validated_by' => auth()->id(),
+            'validated_at' => now(),
+            'catatan_admin' => $catatan,
+        ]);
+
+        if ($request->status_validasi === 'tersedia') {
+            $manajers = User::where('email', 'admin2@storage.com')->get();
+            if ($manajers->isNotEmpty()) {
+                Notification::send($manajers, new PeminjamanNotification($peminjaman, 'validated', auth()->user()));
+            }
+        }
+
+        $peminjaman->user->notify(new PeminjamanNotification($peminjaman, $status, auth()->user()));
+
+        $message = $request->status_validasi === 'tersedia'
+            ? 'Pengajuan divalidasi - Barang tersedia dan diteruskan ke manajer'
+            : 'Pengajuan ditolak - Barang tidak tersedia';
+
+        return redirect()->route('peminjaman.index')
+            ->with('success', $message);
+    }
+
+    /**
+     * Show validation details for Admin 2
+     */
+    public function showValidationDetails($id)
+    {
+        if (!auth()->user()->isManajerPersetujuan()) {
+            abort(403, 'Hanya Manajer Persetujuan yang dapat melihat detail validasi.');
+        }
+
+        $peminjaman = Peminjaman::with(['barang', 'validatedBy'])->findOrFail($id);
+
+        if ($peminjaman->status !== 'validated') {
+            return redirect()->back()->with('error', 'Hanya pengajuan yang sudah divalidasi yang dapat dilihat detailnya.');
+        }
+
+        return view('peminjaman.validation-details', [
+            'peminjaman' => $peminjaman,
+            'title' => 'Detail Validasi Pengajuan'
+        ]);
+    }
+
+    /**
+     * Approve oleh Admin 2 (Manajer Persetujuan)
+     */
+    public function approve($id)
+    {
+        if (!auth()->user()->isManajerPersetujuan()) {
+            abort(403, 'Hanya Manajer Persetujuan yang dapat menyetujui.');
+        }
+
+        $peminjaman = Peminjaman::findOrFail($id);
+
+        if ($peminjaman->status !== 'validated') {
+            return redirect()->back()->with('error', 'Hanya pengajuan yang sudah divalidasi yang dapat disetujui.');
+        }
+
+        $peminjaman->update([
+            'status' => 'approved',
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+        ]);
+
+        $petugasGudang = User::where('email', 'admin3@storage.com')->get();
+        if ($petugasGudang->isNotEmpty()) {
+            Notification::send($petugasGudang, new PeminjamanNotification($peminjaman, 'approved', auth()->user()));
+        }
+        $peminjaman->user->notify(new PeminjamanNotification($peminjaman, 'approved', auth()->user()));
+
+        return redirect()->route('peminjaman.index')
+            ->with('success', 'Pengajuan disetujui! Petugas barang keluar akan memproses.');
+    }
+
+    /**
+     * Reject oleh Admin 2 (Manajer Persetujuan)
+     */
+    public function reject(Request $request, $id)
+    {
+        if (!auth()->user()->isManajerPersetujuan()) {
+            abort(403, 'Hanya Manajer Persetujuan yang dapat menolak.');
+        }
+
+        $request->validate([
+            'catatan_admin' => 'required|string|max:500',
+        ]);
+
+        $peminjaman = Peminjaman::findOrFail($id);
+
+        if (!in_array($peminjaman->status, ['pending', 'validated'])) {
+            return redirect()->back()->with('error', 'Hanya pengajuan pending atau validated yang dapat ditolak.');
+        }
+
+        $peminjaman->update([
+            'status' => 'rejected',
+            'catatan_admin' => $request->catatan_admin,
+        ]);
+
+        $peminjaman->user->notify(new PeminjamanNotification($peminjaman, 'rejected', auth()->user()));
+
+        return redirect()->route('peminjaman.index')
+            ->with('success', 'Pengajuan berhasil ditolak.');
+    }
+
+    /**
+     * Proses barang keluar oleh Admin 3 (Petugas Barang Keluar)
+     */
+    public function processBarangKeluar($id)
+    {
+        if (!auth()->user()->isPetugasBarangKeluar()) {
+            abort(403, 'Hanya Petugas Barang Keluar yang dapat memproses barang.');
+        }
+
+        $peminjaman = Peminjaman::with('barang')->findOrFail($id);
+
+        if ($peminjaman->status !== 'approved') {
+            return redirect()->back()->with('error', 'Hanya pengajuan yang disetujui yang dapat diproses.');
+        }
+
+        $barangAsli = Laporan::where('kode_barang', $peminjaman->barang->kode_barang)
+            ->where('jenis_laporan', 'masuk')
+            ->first();
+
+        if (!$barangAsli || $barangAsli->jumlah < $peminjaman->jumlah_pinjam) {
+            return redirect()->back()->with('error', 'Stok barang tidak mencukupi!');
+        }
+
+        $barangAsli->jumlah -= $peminjaman->jumlah_pinjam;
+        $barangAsli->save();
+
+        $peminjaman->update([
+            'status' => 'completed',
+            'completed_by' => auth()->id(),
+            'completed_at' => now(),
+        ]);
+
+        Laporan::create([
+            'jenis_laporan' => 'keluar',
+            'kode_barang' => $peminjaman->barang->kode_barang,
+            'nama_barang' => $peminjaman->barang->nama_barang,
+            'jumlah' => $peminjaman->jumlah_pinjam,
+            'satuan' => $peminjaman->barang->satuan,
+            'keterangan' => 'PEMINJAMAN: ' . $peminjaman->kode_peminjaman . ' - ' . $peminjaman->keperluan,
+            'lokasi' => 'Peminjaman oleh ' . $peminjaman->user->name,
+            'user_id' => auth()->id(),
+        ]);
+
+        $peminjaman->user->notify(new PeminjamanNotification($peminjaman, 'completed', auth()->user()));
+
+        return redirect()->route('peminjaman.index')
+            ->with('success', 'Barang berhasil dikeluarkan dari gudang!');
+    }
+
+    // ==================== METHOD EXISTING ====================
+
+    public function create()
+    {
+        if (!auth()->user()->isUser()) {
+            abort(403, 'Hanya User yang dapat mengajukan peminjaman.');
+        }
+
         $barangTersedia = Laporan::where('jenis_laporan', 'masuk')
             ->where('jumlah', '>', 0)
             ->orderBy('nama_barang')
@@ -67,9 +304,8 @@ class PeminjamanController extends Controller
 
     public function store(Request $request)
     {
-        // Hanya user biasa yang bisa mengajukan peminjaman
-        if (auth()->user()->email === 'admin@storage.com') {
-            abort(403, 'Admin tidak dapat mengajukan peminjaman.');
+        if (!auth()->user()->isUser()) {
+            abort(403, 'Hanya User yang dapat mengajukan peminjaman.');
         }
 
         $request->validate([
@@ -80,7 +316,6 @@ class PeminjamanController extends Controller
             'keperluan' => 'required|string|max:500',
         ]);
 
-        // Cek stok barang
         $barang = Laporan::findOrFail($request->barang_id);
         if ($barang->jumlah < $request->jumlah_pinjam) {
             return back()->withErrors([
@@ -88,7 +323,6 @@ class PeminjamanController extends Controller
             ])->withInput();
         }
 
-        // Generate kode peminjaman
         $kodePeminjaman = 'PINJ-' . date('Ymd') . '-' . str_pad(Peminjaman::count() + 1, 4, '0', STR_PAD_LEFT);
 
         $peminjaman = Peminjaman::create([
@@ -102,27 +336,26 @@ class PeminjamanController extends Controller
             'status' => 'pending',
         ]);
 
-        // KIRIM NOTIFIKASI KE ADMIN - Ada pengajuan peminjaman baru
-        $adminUsers = User::where('email', 'admin@storage.com')->get();
-        Notification::send($adminUsers, new PeminjamanNotification($peminjaman, 'created'));
+        $petugasPengajuan = User::where('email', 'admin1@storage.com')->get();
+        if ($petugasPengajuan->isNotEmpty()) {
+            Notification::send($petugasPengajuan, new PeminjamanNotification($peminjaman, 'created'));
+        }
 
         return redirect()->route('peminjaman.index')
-            ->with('success', 'Pengajuan peminjaman berhasil diajukan! Menunggu persetujuan admin.');
+            ->with('success', 'Pengajuan peminjaman berhasil diajukan! Menunggu validasi petugas.');
     }
 
     public function show($id)
     {
-        $peminjaman = Peminjaman::with(['user', 'barang'])->findOrFail($id);
+        $peminjaman = Peminjaman::with(['user', 'barang', 'validatedBy', 'approvedBy', 'completedBy'])->findOrFail($id);
 
-        // Authorization check
-        if (auth()->user()->email !== 'admin@storage.com' && $peminjaman->user_id !== auth()->id()) {
+        if (auth()->user()->isUser() && $peminjaman->user_id !== auth()->id()) {
             abort(403, 'Unauthorized action.');
         }
 
         return view('peminjaman.show', [
             'peminjaman' => $peminjaman,
             'title' => 'Detail Peminjaman',
-            'isAdmin' => auth()->user()->email === 'admin@storage.com'
         ]);
     }
 
@@ -130,7 +363,6 @@ class PeminjamanController extends Controller
     {
         $peminjaman = Peminjaman::with('barang')->findOrFail($id);
 
-        // Hanya user yang membuat dan status pending yang bisa edit
         if ($peminjaman->user_id !== auth()->id() || $peminjaman->status !== 'pending') {
             abort(403, 'Unauthorized action.');
         }
@@ -151,7 +383,6 @@ class PeminjamanController extends Controller
     {
         $peminjaman = Peminjaman::findOrFail($id);
 
-        // Hanya user yang membuat dan status pending yang bisa edit
         if ($peminjaman->user_id !== auth()->id() || $peminjaman->status !== 'pending') {
             abort(403, 'Unauthorized action.');
         }
@@ -164,7 +395,6 @@ class PeminjamanController extends Controller
             'keperluan' => 'required|string|max:500',
         ]);
 
-        // Cek stok barang (kecuali barang yang sama)
         $barang = Laporan::findOrFail($request->barang_id);
         $stokTersedia = $barang->id == $peminjaman->barang_id
             ? $barang->jumlah + $peminjaman->jumlah_pinjam
@@ -192,120 +422,37 @@ class PeminjamanController extends Controller
     {
         $peminjaman = Peminjaman::findOrFail($id);
 
-        // PERBAIKI AUTHORIZATION: Admin bisa hapus semua status, user hanya bisa hapus yang pending
-        if (auth()->user()->email === 'admin@storage.com') {
-            // Admin bisa hapus semua peminjaman regardless of status
-        } elseif ($peminjaman->user_id !== auth()->id() || $peminjaman->status !== 'pending') {
-            // User biasa hanya bisa hapus peminjaman mereka sendiri yang masih pending
-            abort(403, 'Unauthorized action.');
+        if (auth()->user()->isUser()) {
+            if ($peminjaman->user_id !== auth()->id() || $peminjaman->status !== 'pending') {
+                abort(403, 'Unauthorized action.');
+            }
         }
 
         $peminjaman->delete();
 
-        $message = auth()->user()->email === 'admin@storage.com'
-            ? 'Pengajuan peminjaman berhasil dihapus!'
-            : 'Pengajuan peminjaman berhasil dibatalkan!';
+        $message = auth()->user()->isUser()
+            ? 'Pengajuan peminjaman berhasil dibatalkan!'
+            : 'Pengajuan peminjaman berhasil dihapus!';
 
         return redirect()->route('peminjaman.index')
             ->with('success', $message);
-    }
-
-    public function approve($id)
-    {
-        // Hanya admin yang bisa approve
-        if (auth()->user()->email !== 'admin@storage.com') {
-            abort(403, 'Hanya admin yang dapat menyetujui peminjaman.');
-        }
-
-        $peminjaman = Peminjaman::with('barang')->findOrFail($id);
-
-        if (!$peminjaman->canBeApproved()) {
-            return redirect()->route('peminjaman.index')
-                ->with('error', 'Peminjaman tidak dapat disetujui. Stok tidak mencukupi atau status tidak valid.');
-        }
-
-        // CARI BARANG ASLI untuk mengurangi stok
-        $barangAsli = Laporan::where('kode_barang', $peminjaman->barang->kode_barang)
-            ->where('jenis_laporan', 'masuk')
-            ->orderBy('created_at', 'desc')
-            ->first();
-
-        if (!$barangAsli) {
-            return redirect()->route('peminjaman.index')
-                ->with('error', 'Barang asli tidak ditemukan.');
-        }
-
-        // Kurangi stok barang asli
-        $barangAsli->jumlah -= $peminjaman->jumlah_pinjam;
-        $barangAsli->save();
-
-        // Update status peminjaman
-        $peminjaman->update([
-            'status' => 'approved',
-            'approved_at' => now(),
-        ]);
-
-        // KIRIM NOTIFIKASI KE USER - Peminjaman disetujui
-        $peminjaman->user->notify(new PeminjamanNotification($peminjaman, 'approved', auth()->user()));
-
-        // Buat laporan barang keluar otomatis (hanya untuk tracking)
-        Laporan::create([
-            'jenis_laporan' => 'keluar',
-            'kode_barang' => $peminjaman->barang->kode_barang,
-            'nama_barang' => $peminjaman->barang->nama_barang,
-            'jumlah' => $peminjaman->jumlah_pinjam,
-            'satuan' => $peminjaman->barang->satuan,
-            'keterangan' => 'PEMINJAMAN: ' . $peminjaman->kode_peminjaman . ' - ' . $peminjaman->keperluan . ' (Oleh: ' . $peminjaman->user->name . ')',
-            'lokasi' => 'Peminjaman oleh ' . $peminjaman->user->name,
-            'user_id' => auth()->id(),
-        ]);
-
-        return redirect()->route('peminjaman.index')
-            ->with('success', 'Peminjaman berhasil disetujui dan stok barang telah dikurangi.');
-    }
-
-    public function reject(Request $request, $id)
-    {
-        // Hanya admin yang bisa reject
-        if (auth()->user()->email !== 'admin@storage.com') {
-            abort(403, 'Hanya admin yang dapat menolak peminjaman.');
-        }
-
-        $request->validate([
-            'catatan_admin' => 'required|string|max:500',
-        ]);
-
-        $peminjaman = Peminjaman::findOrFail($id);
-        $peminjaman->update([
-            'status' => 'rejected',
-            'catatan_admin' => $request->catatan_admin,
-        ]);
-
-        // KIRIM NOTIFIKASI KE USER - Peminjaman ditolak
-        $peminjaman->user->notify(new PeminjamanNotification($peminjaman, 'rejected', auth()->user()));
-
-        return redirect()->route('peminjaman.index')
-            ->with('success', 'Peminjaman berhasil ditolak.');
     }
 
     public function return($id)
     {
         $peminjaman = Peminjaman::with('barang')->findOrFail($id);
 
-        // Hanya USER yang bersangkutan yang bisa mengembalikan (admin tidak bisa)
         if ($peminjaman->user_id !== auth()->id()) {
             abort(403, 'Hanya user yang meminjam yang dapat mengembalikan barang.');
         }
 
-        if ($peminjaman->status !== 'approved') {
+        if ($peminjaman->status !== 'completed') {
             return redirect()->route('peminjaman.index')
-                ->with('error', 'Hanya peminjaman yang disetujui yang dapat dikembalikan.');
+                ->with('error', 'Hanya peminjaman yang sudah selesai yang dapat dikembalikan.');
         }
 
-        // CARI BARANG ASLI (bukan buat record baru)
         $barangAsli = Laporan::where('kode_barang', $peminjaman->barang->kode_barang)
             ->where('jenis_laporan', 'masuk')
-            ->orderBy('created_at', 'desc')
             ->first();
 
         if (!$barangAsli) {
@@ -313,42 +460,18 @@ class PeminjamanController extends Controller
                 ->with('error', 'Barang asli tidak ditemukan.');
         }
 
-        // Kembalikan stok barang asli (tambah jumlahnya)
         $barangAsli->jumlah += $peminjaman->jumlah_pinjam;
         $barangAsli->save();
 
-        // Cari record barang keluar yang dibuat saat peminjaman
-        $barangKeluar = Laporan::where('jenis_laporan', 'keluar')
-            ->where('kode_barang', $peminjaman->barang->kode_barang)
-            ->where('keterangan', 'like', '%PEMINJAMAN: ' . $peminjaman->kode_peminjaman . '%')
-            ->first();
-
-        if ($barangKeluar) {
-            // Hapus record barang keluar yang terkait dengan peminjaman ini
-            $barangKeluar->delete();
-        }
-
-        // Update status peminjaman
         $peminjaman->update([
             'status' => 'returned',
             'returned_at' => now(),
         ]);
 
-        // KIRIM NOTIFIKASI KE ADMIN - Barang dikembalikan
-        $adminUsers = User::where('email', 'admin@storage.com')->get();
-        Notification::send($adminUsers, new PeminjamanNotification($peminjaman, 'returned', auth()->user()));
-
-        // Buat laporan barang masuk untuk tracking pengembalian
-        Laporan::create([
-            'jenis_laporan' => 'masuk',
-            'kode_barang' => $peminjaman->barang->kode_barang,
-            'nama_barang' => $peminjaman->barang->nama_barang,
-            'jumlah' => 0,
-            'satuan' => $peminjaman->barang->satuan,
-            'keterangan' => 'PENGEMBALIAN: ' . $peminjaman->kode_peminjaman . ' - ' . $peminjaman->keperluan . ' (Stok sudah dikembalikan ke inventory)',
-            'lokasi' => $barangAsli->lokasi,
-            'user_id' => auth()->id(),
-        ]);
+        $admins = User::where('email', 'like', '%admin%@storage.com')->get();
+        if ($admins->isNotEmpty()) {
+            Notification::send($admins, new PeminjamanNotification($peminjaman, 'returned', auth()->user()));
+        }
 
         return redirect()->route('peminjaman.index')
             ->with('success', 'Barang berhasil dikembalikan dan stok telah dikembalikan ke inventory.');

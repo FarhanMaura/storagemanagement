@@ -12,11 +12,6 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'email',
@@ -24,25 +19,82 @@ class User extends Authenticatable
         'google2fa_secret',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
         'google2fa_secret',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    // ==================== METHOD ROLE BARU ====================
+
+    /**
+     * Check user role based on email (BACKWARD COMPATIBLE)
+     */
+    public function isUser()
+    {
+        return !$this->isAdmin() && !$this->isPetugasPengajuan() &&
+               !$this->isManajerPersetujuan() && !$this->isPetugasBarangKeluar();
+    }
+
+    public function isAdmin()
+    {
+        return $this->email === 'admin@storage.com';
+    }
+
+    public function isPetugasPengajuan()
+    {
+        return $this->email === 'admin1@storage.com' || $this->isAdmin();
+    }
+
+    public function isManajerPersetujuan()
+    {
+        return $this->email === 'admin2@storage.com' || $this->isAdmin();
+    }
+
+    public function isPetugasBarangKeluar()
+    {
+        return $this->email === 'admin3@storage.com' || $this->isAdmin();
+    }
+
+    /**
+     * Get role name for display
+     */
+    public function getRoleName()
+    {
+        if ($this->isAdmin()) return 'Main Admin';
+        if ($this->isPetugasPengajuan()) return 'Petugas Pengajuan';
+        if ($this->isManajerPersetujuan()) return 'Manajer Persetujuan';
+        if ($this->isPetugasBarangKeluar()) return 'Petugas Barang Keluar';
+        return 'User';
+    }
+
+    // ==================== RELATIONSHIPS PEMINJAMAN BARU ====================
+
+    public function peminjaman()
+    {
+        return $this->hasMany(Peminjaman::class);
+    }
+
+    public function validatedPeminjaman()
+    {
+        return $this->hasMany(Peminjaman::class, 'validated_by');
+    }
+
+    public function approvedPeminjaman()
+    {
+        return $this->hasMany(Peminjaman::class, 'approved_by');
+    }
+
+    public function completedPeminjaman()
+    {
+        return $this->hasMany(Peminjaman::class, 'completed_by');
+    }
+
+    // ==================== METHOD EXISTING (SEMUA DIPERTAHANKAN) ====================
 
     /**
      * Enable 2FA for the user
@@ -103,14 +155,6 @@ class User extends Authenticatable
     public function markAllNotificationsAsRead()
     {
         $this->unreadNotifications()->update(['read_at' => now()]);
-    }
-
-    /**
-     * Check if user is admin
-     */
-    public function isAdmin()
-    {
-        return $this->email === 'admin@storage.com';
     }
 
     /**
@@ -190,7 +234,7 @@ class User extends Authenticatable
      */
     public function getDisplayNameWithRole()
     {
-        $role = $this->isAdmin() ? 'Admin' : 'User';
+        $role = $this->getRoleName();
         return "{$this->name} ({$role})";
     }
 
@@ -207,10 +251,5 @@ class User extends Authenticatable
         }
 
         return substr($initials, 0, 2);
-    }
-
-    public function peminjaman()
-    {
-        return $this->hasMany(Peminjaman::class);
     }
 }
