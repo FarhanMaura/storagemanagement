@@ -262,7 +262,7 @@
                             @endif
 
                             @if($isPetugasBarangKeluar && $peminjaman->status === 'approved')
-                                <form action="{{ route('peminjaman.process-barang-keluar', $peminjaman->id) }}" method="POST" class="inline">
+                                <form action="{{ route('peminjaman.process', $peminjaman->id) }}" method="POST" class="inline">
                                     @csrf
                                     <button type="submit"
                                             class="bg-purple-600 text-white px-6 py-3 rounded-xl hover:bg-purple-700 transition-all duration-300 hover:scale-105 font-semibold flex items-center"
