@@ -46,11 +46,13 @@ class PeminjamanController extends Controller
             $baseQuery->where('status', 'approved');
         }
 
+        // Hitung statistik dengan status baru
         $statistik = [
             'total' => $baseQuery->count(),
             'pending' => $baseQuery->clone()->where('status', 'pending')->count(),
             'validated' => $baseQuery->clone()->where('status', 'validated')->count(),
             'approved' => $baseQuery->clone()->where('status', 'approved')->count(),
+            'processed' => $baseQuery->clone()->where('status', 'processed')->count(),
             'completed' => $baseQuery->clone()->where('status', 'completed')->count(),
             'returned' => $baseQuery->clone()->where('status', 'returned')->count(),
             'rejected' => $baseQuery->clone()->where('status', 'rejected')->count(),
@@ -261,7 +263,7 @@ class PeminjamanController extends Controller
         $barangAsli->save();
 
         $peminjaman->update([
-            'status' => 'completed',
+            'status' => 'processed',
             'completed_by' => auth()->id(),
             'completed_at' => now(),
         ]);
@@ -277,13 +279,39 @@ class PeminjamanController extends Controller
             'user_id' => auth()->id(),
         ]);
 
-        $peminjaman->user->notify(new PeminjamanNotification($peminjaman, 'completed', auth()->user()));
+        $peminjaman->user->notify(new PeminjamanNotification($peminjaman, 'processed', auth()->user()));
 
         return redirect()->route('peminjaman.index')
-            ->with('success', 'Barang berhasil dikeluarkan dari gudang!');
+            ->with('success', 'Barang berhasil dikeluarkan dari gudang! Menunggu konfirmasi user.');
     }
 
-    // ==================== METHOD EXISTING ====================
+    /**
+     * Complete peminjaman oleh User setelah menerima barang
+     */
+    public function completePeminjaman($id)
+    {
+        $peminjaman = Peminjaman::findOrFail($id);
+
+        if ($peminjaman->user_id !== auth()->id()) {
+            abort(403, 'Hanya user yang meminjam yang dapat menyelesaikan peminjaman.');
+        }
+
+        if ($peminjaman->status !== 'processed') {
+            return redirect()->back()->with('error', 'Hanya peminjaman yang sudah diproses yang dapat diselesaikan.');
+        }
+
+        $peminjaman->update([
+            'status' => 'completed',
+        ]);
+
+        $admins = User::where('email', 'like', '%admin%@storage.com')->get();
+        if ($admins->isNotEmpty()) {
+            Notification::send($admins, new PeminjamanNotification($peminjaman, 'completed', auth()->user()));
+        }
+
+        return redirect()->route('peminjaman.index')
+            ->with('success', 'Peminjaman berhasil diselesaikan! Terima kasih.');
+    }
 
     public function create()
     {

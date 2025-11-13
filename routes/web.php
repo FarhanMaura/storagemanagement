@@ -66,6 +66,7 @@ Route::middleware(['auth', '2fa'])->group(function () {
     Route::post('/peminjaman/{id}/reject', [PeminjamanController::class, 'reject'])->name('peminjaman.reject');
     Route::post('/peminjaman/{id}/process', [PeminjamanController::class, 'processBarangKeluar'])->name('peminjaman.process');
     Route::post('/peminjaman/{id}/return', [PeminjamanController::class, 'return'])->name('peminjaman.return');
+    Route::post('/peminjaman/{id}/complete', [PeminjamanController::class, 'completePeminjaman'])->name('peminjaman.complete');
 });
 
 // Routes Barcode

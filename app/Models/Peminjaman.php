@@ -81,6 +81,11 @@ class Peminjaman extends Model
         return $query->where('status', 'approved');
     }
 
+    public function scopeProcessed($query)
+    {
+        return $query->where('status', 'processed');
+    }
+
     public function scopeCompleted($query)
     {
         return $query->where('status', 'completed');
@@ -107,6 +112,11 @@ class Peminjaman extends Model
         return $this->status === 'approved' && $this->barang && $this->barang->jumlah >= $this->jumlah_pinjam;
     }
 
+    public function canBeCompleted()
+    {
+        return $this->status === 'processed' && $this->user_id === auth()->id();
+    }
+
     public function canBeReturned()
     {
         return $this->status === 'completed' && !$this->returned_at;
@@ -118,7 +128,8 @@ class Peminjaman extends Model
             'pending' => 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300',
             'validated' => 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300',
             'approved' => 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300',
-            'completed' => 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300',
+            'processed' => 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300',
+            'completed' => 'bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-300',
             'rejected' => 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300',
             'returned' => 'bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-300'
         ];
@@ -132,6 +143,7 @@ class Peminjaman extends Model
             'pending' => 'Menunggu Validasi',
             'validated' => 'Terverifikasi',
             'approved' => 'Disetujui',
+            'processed' => 'Barang Dikeluarkan',
             'completed' => 'Selesai',
             'rejected' => 'Ditolak',
             'returned' => 'Dikembalikan'
@@ -146,8 +158,9 @@ class Peminjaman extends Model
             'pending' => 1,
             'validated' => 2,
             'approved' => 3,
-            'completed' => 4,
-            'returned' => 5,
+            'processed' => 4,
+            'completed' => 5,
+            'returned' => 6,
             'rejected' => 0
         ];
 
@@ -156,7 +169,7 @@ class Peminjaman extends Model
 
     public function getTotalStepsAttribute()
     {
-        return 5; // pending → validated → approved → completed → returned
+        return 6;
     }
 
     public function getProgressPercentageAttribute()
