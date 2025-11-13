@@ -248,7 +248,7 @@ class LaporanController extends Controller
     }
 
     /**
-     * Export laporan to CSV
+     * Export laporan to CSV dengan filter lengkap
      */
     public function exportCSV(Request $request)
     {
@@ -258,6 +258,7 @@ class LaporanController extends Controller
         $search = $request->get('search');
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
+        $jenisLaporan = $request->get('jenis_laporan');
 
         $query = Laporan::with('user');
 
@@ -266,11 +267,17 @@ class LaporanController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('kode_barang', 'like', "%{$search}%")
                   ->orWhere('nama_barang', 'like', "%{$search}%")
-                  ->orWhere('keterangan', 'like', "%{$search}%");
+                  ->orWhere('keterangan', 'like', "%{$search}%")
+                  ->orWhere('lokasi', 'like', "%{$search}%");
             });
         }
 
-        // Filter berdasarkan tanggal
+        // Filter berdasarkan jenis laporan
+        if ($jenisLaporan && in_array($jenisLaporan, ['masuk', 'keluar'])) {
+            $query->where('jenis_laporan', $jenisLaporan);
+        }
+
+        // Filter berdasarkan tanggal CREATED_AT (waktu laporan dibuat)
         if ($startDate) {
             $query->whereDate('created_at', '>=', $startDate);
         }
@@ -291,17 +298,22 @@ class LaporanController extends Controller
             'Expires' => '0'
         ];
 
-        $callback = function() use ($laporans) {
+        $callback = function() use ($laporans, $search, $startDate, $endDate, $jenisLaporan) {
             $file = fopen('php://output', 'w');
 
             // Add BOM for UTF-8
             fputs($file, $bom = (chr(0xEF) . chr(0xBB) . chr(0xBF)));
 
-            // Header CSV
+            // Header CSV dengan info filter
+            fputcsv($file, ['LAPORAN BARANG - ' . date('d/m/Y H:i:s')], ';');
+            fputcsv($file, ['Filter: ' . $this->getFilterInfo($search, $jenisLaporan, $startDate, $endDate)], ';');
+            fputcsv($file, [''], ';'); // Empty row
+
+            // Header data
             fputcsv($file, [
                 'NO',
-                'TANGGAL',
-                'JAM',
+                'TANGGAL LAPORAN',
+                'JAM LAPORAN',
                 'JENIS LAPORAN',
                 'KODE BARANG',
                 'NAMA BARANG',
@@ -332,6 +344,10 @@ class LaporanController extends Controller
                 ], ';');
             }
 
+            // Summary
+            fputcsv($file, [''], ';');
+            fputcsv($file, ['TOTAL DATA: ' . $laporans->count()], ';');
+
             fclose($file);
         };
 
@@ -339,7 +355,7 @@ class LaporanController extends Controller
     }
 
     /**
-     * Export laporan to Excel (XLSX) - FIXED dengan library Excel
+     * Export laporan to Excel (XLSX) dengan filter lengkap
      */
     public function exportExcel(Request $request)
     {
@@ -349,14 +365,15 @@ class LaporanController extends Controller
         $search = $request->get('search');
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
+        $jenisLaporan = $request->get('jenis_laporan');
 
         $fileName = 'laporan-barang-' . date('Y-m-d') . '.xlsx';
 
-        return Excel::download(new LaporanExport($search, $startDate, $endDate), $fileName);
+        return Excel::download(new LaporanExport($search, $jenisLaporan, $startDate, $endDate), $fileName);
     }
 
     /**
-     * Show export form
+     * Show export form dengan filter
      */
     public function showExportForm()
     {
@@ -366,6 +383,29 @@ class LaporanController extends Controller
         return view('laporan.export', [
             'title' => 'Export Laporan'
         ]);
+    }
+
+    /**
+     * Helper untuk info filter
+     */
+    private function getFilterInfo($search, $jenisLaporan, $startDate, $endDate)
+    {
+        $filters = [];
+
+        if ($search) {
+            $filters[] = "Pencarian: {$search}";
+        }
+        if ($jenisLaporan) {
+            $filters[] = "Jenis: " . ($jenisLaporan === 'masuk' ? 'Barang Masuk' : 'Barang Keluar');
+        }
+        if ($startDate) {
+            $filters[] = "Tanggal Mulai: {$startDate}";
+        }
+        if ($endDate) {
+            $filters[] = "Tanggal Akhir: {$endDate}";
+        }
+
+        return $filters ? implode(' | ', $filters) : 'Semua Data';
     }
 
     /**

@@ -28,6 +28,7 @@ class PeminjamanController extends Controller
         } elseif ($user->isPetugasBarangKeluar()) {
             $query->where('status', 'approved');
         }
+        // MAIN ADMIN bisa lihat SEMUA data tanpa filter otomatis
 
         if ($request->has('status') && $request->status) {
             $query->where('status', $request->status);
@@ -45,8 +46,8 @@ class PeminjamanController extends Controller
         } elseif ($user->isPetugasBarangKeluar()) {
             $baseQuery->where('status', 'approved');
         }
+        // MAIN ADMIN hitung semua data
 
-        // Hitung statistik dengan status baru
         $statistik = [
             'total' => $baseQuery->count(),
             'pending' => $baseQuery->clone()->where('status', 'pending')->count(),
@@ -71,6 +72,7 @@ class PeminjamanController extends Controller
         if ($user->isPetugasPengajuan()) return 'Validasi Pengajuan Barang';
         if ($user->isManajerPersetujuan()) return 'Persetujuan Peminjaman';
         if ($user->isPetugasBarangKeluar()) return 'Proses Barang Keluar';
+        if ($user->isAdmin()) return 'Management Peminjaman'; // Title untuk Main Admin
         return 'Management Peminjaman';
     }
 
@@ -79,8 +81,8 @@ class PeminjamanController extends Controller
      */
     public function showValidationForm($id)
     {
-        if (!auth()->user()->isPetugasPengajuan()) {
-            abort(403, 'Hanya Petugas Pengajuan yang dapat memvalidasi.');
+        if (!auth()->user()->isPetugasPengajuan() && !auth()->user()->isAdmin()) {
+            abort(403, 'Hanya Petugas Pengajuan atau Main Admin yang dapat memvalidasi.');
         }
 
         $peminjaman = Peminjaman::with('barang')->findOrFail($id);
@@ -107,12 +109,12 @@ class PeminjamanController extends Controller
     }
 
     /**
-     * Process validation by Admin 1
+     * Process validation by Admin 1 atau Main Admin
      */
     public function processValidation(Request $request, $id)
     {
-        if (!auth()->user()->isPetugasPengajuan()) {
-            abort(403, 'Hanya Petugas Pengajuan yang dapat memvalidasi.');
+        if (!auth()->user()->isPetugasPengajuan() && !auth()->user()->isAdmin()) {
+            abort(403, 'Hanya Petugas Pengajuan atau Main Admin yang dapat memvalidasi.');
         }
 
         $request->validate([
@@ -138,7 +140,7 @@ class PeminjamanController extends Controller
         ]);
 
         if ($request->status_validasi === 'tersedia') {
-            $manajers = User::where('email', 'admin2@storage.com')->get();
+            $manajers = User::where('email', 'admin2@storage.com')->orWhere('isManajerPersetujuan', true)->get();
             if ($manajers->isNotEmpty()) {
                 Notification::send($manajers, new PeminjamanNotification($peminjaman, 'validated', auth()->user()));
             }
@@ -155,12 +157,12 @@ class PeminjamanController extends Controller
     }
 
     /**
-     * Show validation details for Admin 2
+     * Show validation details for Admin 2 atau Main Admin
      */
     public function showValidationDetails($id)
     {
-        if (!auth()->user()->isManajerPersetujuan()) {
-            abort(403, 'Hanya Manajer Persetujuan yang dapat melihat detail validasi.');
+        if (!auth()->user()->isManajerPersetujuan() && !auth()->user()->isAdmin()) {
+            abort(403, 'Hanya Manajer Persetujuan atau Main Admin yang dapat melihat detail validasi.');
         }
 
         $peminjaman = Peminjaman::with(['barang', 'validatedBy'])->findOrFail($id);
@@ -176,12 +178,12 @@ class PeminjamanController extends Controller
     }
 
     /**
-     * Approve oleh Admin 2 (Manajer Persetujuan)
+     * Approve oleh Admin 2 (Manajer Persetujuan) atau Main Admin
      */
     public function approve($id)
     {
-        if (!auth()->user()->isManajerPersetujuan()) {
-            abort(403, 'Hanya Manajer Persetujuan yang dapat menyetujui.');
+        if (!auth()->user()->isManajerPersetujuan() && !auth()->user()->isAdmin()) {
+            abort(403, 'Hanya Manajer Persetujuan atau Main Admin yang dapat menyetujui.');
         }
 
         $peminjaman = Peminjaman::findOrFail($id);
@@ -196,7 +198,7 @@ class PeminjamanController extends Controller
             'approved_at' => now(),
         ]);
 
-        $petugasGudang = User::where('email', 'admin3@storage.com')->get();
+        $petugasGudang = User::where('email', 'admin3@storage.com')->orWhere('isPetugasBarangKeluar', true)->get();
         if ($petugasGudang->isNotEmpty()) {
             Notification::send($petugasGudang, new PeminjamanNotification($peminjaman, 'approved', auth()->user()));
         }
@@ -207,12 +209,12 @@ class PeminjamanController extends Controller
     }
 
     /**
-     * Reject oleh Admin 2 (Manajer Persetujuan)
+     * Reject oleh Admin 2 (Manajer Persetujuan) atau Main Admin
      */
     public function reject(Request $request, $id)
     {
-        if (!auth()->user()->isManajerPersetujuan()) {
-            abort(403, 'Hanya Manajer Persetujuan yang dapat menolak.');
+        if (!auth()->user()->isManajerPersetujuan() && !auth()->user()->isAdmin()) {
+            abort(403, 'Hanya Manajer Persetujuan atau Main Admin yang dapat menolak.');
         }
 
         $request->validate([
@@ -237,12 +239,12 @@ class PeminjamanController extends Controller
     }
 
     /**
-     * Proses barang keluar oleh Admin 3 (Petugas Barang Keluar)
+     * Proses barang keluar oleh Admin 3 (Petugas Barang Keluar) atau Main Admin
      */
     public function processBarangKeluar($id)
     {
-        if (!auth()->user()->isPetugasBarangKeluar()) {
-            abort(403, 'Hanya Petugas Barang Keluar yang dapat memproses barang.');
+        if (!auth()->user()->isPetugasBarangKeluar() && !auth()->user()->isAdmin()) {
+            abort(403, 'Hanya Petugas Barang Keluar atau Main Admin yang dapat memproses barang.');
         }
 
         $peminjaman = Peminjaman::with('barang')->findOrFail($id);
@@ -364,7 +366,7 @@ class PeminjamanController extends Controller
             'status' => 'pending',
         ]);
 
-        $petugasPengajuan = User::where('email', 'admin1@storage.com')->get();
+        $petugasPengajuan = User::where('email', 'admin1@storage.com')->orWhere('isPetugasPengajuan', true)->get();
         if ($petugasPengajuan->isNotEmpty()) {
             Notification::send($petugasPengajuan, new PeminjamanNotification($peminjaman, 'created'));
         }
