@@ -475,6 +475,9 @@ class PeminjamanController extends Controller
             ->with('success', $message);
     }
 
+    /**
+     * Return barang oleh User setelah selesai meminjam
+     */
     public function return($id)
     {
         $peminjaman = Peminjaman::with('barang')->findOrFail($id);
@@ -497,20 +500,35 @@ class PeminjamanController extends Controller
                 ->with('error', 'Barang asli tidak ditemukan.');
         }
 
+        // 1. Tambah stok di barang asli
         $barangAsli->jumlah += $peminjaman->jumlah_pinjam;
         $barangAsli->save();
 
+        // 2. BUAT LAPORAN BARU untuk mencatat pengembalian barang (BARANG MASUK)
+        Laporan::create([
+            'jenis_laporan' => 'masuk',
+            'kode_barang' => $peminjaman->barang->kode_barang,
+            'nama_barang' => $peminjaman->barang->nama_barang,
+            'jumlah' => $peminjaman->jumlah_pinjam,
+            'satuan' => $peminjaman->barang->satuan,
+            'keterangan' => 'PENGEMBALIAN: ' . $peminjaman->kode_peminjaman . ' - Dikembalikan oleh ' . $peminjaman->user->name,
+            'lokasi' => 'Gudang Utama',
+            'user_id' => auth()->id(),
+        ]);
+
+        // 3. Update status peminjaman
         $peminjaman->update([
             'status' => 'returned',
             'returned_at' => now(),
         ]);
 
+        // 4. Kirim notifikasi
         $admins = User::where('email', 'like', '%admin%@storage.com')->get();
         if ($admins->isNotEmpty()) {
             Notification::send($admins, new PeminjamanNotification($peminjaman, 'returned', auth()->user()));
         }
 
         return redirect()->route('peminjaman.index')
-            ->with('success', 'Barang berhasil dikembalikan dan stok telah dikembalikan ke inventory.');
+            ->with('success', 'Barang berhasil dikembalikan! Stok telah dikembalikan ke inventory dan laporan pengembalian telah dicatat.');
     }
 }
