@@ -216,7 +216,8 @@
                                             'pending' => 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300',
                                             'validated' => 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300',
                                             'approved' => 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300',
-                                            'completed' => 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300',
+                                            'processed' => 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300',
+                                            'completed' => 'bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-300',
                                             'rejected' => 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300',
                                             'returned' => 'bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-300'
                                         ];
@@ -224,6 +225,7 @@
                                             'pending' => 'Menunggu Validasi',
                                             'validated' => 'Terverifikasi',
                                             'approved' => 'Disetujui',
+                                            'processed' => 'Barang Dipinjam',
                                             'completed' => 'Selesai',
                                             'rejected' => 'Ditolak',
                                             'returned' => 'Dikembalikan'
@@ -329,6 +331,21 @@
                                                         class="text-purple-600 dark:text-purple-400 hover:text-purple-900 dark:hover:text-purple-300 transition duration-150 p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30"
                                                         title="Proses Barang Keluar"
                                                         onclick="return confirm('Proses pengeluaran barang?')">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        @endif
+
+                                        <!-- Konfirmasi Penerimaan oleh User (status processed) -->
+                                        @if(auth()->user()->isUser() && $item->status === 'processed')
+                                            <form action="{{ route('peminjaman.complete', $item->id) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit"
+                                                        class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 transition duration-150 p-2 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30"
+                                                        title="Konfirmasi Penerimaan Barang"
+                                                        onclick="return confirm('Konfirmasi telah menerima barang?')">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                                     </svg>

@@ -292,6 +292,27 @@
                         </div>
                     </div>
                     @else
+                        <!-- Action Buttons untuk User -->
+                        @if($peminjaman->status === 'processed' && $peminjaman->user_id === auth()->id())
+                        <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Konfirmasi Penerimaan Barang</h3>
+                            <form action="{{ route('peminjaman.complete', $peminjaman->id) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit"
+                                        class="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 transition-all duration-300 hover:scale-105 font-semibold flex items-center"
+                                        onclick="return confirm('Konfirmasi telah menerima barang?')">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    Konfirmasi Barang Diterima
+                                </button>
+                            </form>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-3">
+                                <strong>Note:</strong> Klik tombol ini setelah Anda menerima barang dari petugas.
+                            </p>
+                        </div>
+                        @endif
+
                         @if($peminjaman->status === 'completed' && $peminjaman->user_id === auth()->id())
                         <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-600">
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Aksi Pengembalian</h3>
