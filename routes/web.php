@@ -73,7 +73,8 @@ Route::middleware(['auth', '2fa'])->group(function () {
 Route::middleware(['auth', '2fa'])->group(function () {
     Route::get('/barcode', [BarcodeController::class, 'index'])->name('barcode.index');
     Route::post('/barcode/generate', [BarcodeController::class, 'generate'])->name('barcode.generate');
-    Route::get('/barcode/print/{kode_barang}/{jenis}', [BarcodeController::class, 'printLabel'])->name('barcode.print');
+    Route::get('/barcode/print/{kode_barang}', [BarcodeController::class, 'print'])->name('barcode.print');
+    Route::get('/barcode/print-label/{kode_barang}/{jenis}', [BarcodeController::class, 'printLabel'])->name('barcode.print.label');
 });
 
 // Route untuk scan barcode (bisa diakses tanpa auth)

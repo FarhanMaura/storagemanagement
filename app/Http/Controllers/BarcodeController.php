@@ -121,8 +121,45 @@ class BarcodeController extends Controller
             'barang' => $barang,
             'barcode1D' => $barcode1DBase64,
             'barcodeQR' => $barcodeQRBase64,
-            'jenis' => $jenis,
-            'title' => 'Print Label - ' . $barang->kode_barang
+            'jenis' => $jenis
+        ]);
+    }
+
+    public function print($kode_barang, Request $request)
+    {
+        $jenis = $request->get('jenis', 'keduanya');
+
+        $barang = Laporan::where('kode_barang', $kode_barang)->first();
+
+        if (!$barang) {
+            abort(404, 'Barang tidak ditemukan');
+        }
+
+        $dns1d = new DNS1D();
+        $dns2d = new DNS2D();
+
+        // Generate barcode
+        $barcodeQR = $dns2d->getBarcodePNG(
+            url('/scan/' . $barang->kode_barang),
+            'QRCODE',
+            12,
+            12
+        );
+        $barcodeQR = 'data:image/png;base64,' . $barcodeQR;
+
+        $barcode1D = $dns1d->getBarcodePNG(
+            $barang->kode_barang,
+            'C128',
+            2,
+            60
+        );
+        $barcode1D = 'data:image/png;base64,' . $barcode1D;
+
+        return view('barcode.print', [
+            'barang' => $barang,
+            'barcodeQR' => $barcodeQR,
+            'barcode1D' => $barcode1D,
+            'jenis' => $jenis
         ]);
     }
 }

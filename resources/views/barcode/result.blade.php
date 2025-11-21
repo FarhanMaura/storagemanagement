@@ -5,13 +5,15 @@
                 {{ $title }}
             </h2>
             <div class="flex space-x-3">
-                <button onclick="window.print()"
-                        class="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 no-print transition-all duration-300 hover:scale-105 font-semibold flex items-center">
+                <!-- Ganti tombol print dengan link ke halaman print khusus -->
+                <a href="{{ route('barcode.print', ['kode_barang' => $barang->kode_barang, 'jenis' => $jenis_barcode]) }}"
+                   target="_blank"
+                   class="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 no-print transition-all duration-300 hover:scale-105 font-semibold flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
                     </svg>
                     🖨️ Print
-                </button>
+                </a>
                 <a href="{{ route('barcode.index') }}"
                    class="bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 no-print transition-all duration-300 hover:scale-105 font-semibold flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,13 +191,6 @@
     </style>
 
     <script>
-        // Auto print jika parameter print=true
-        if (window.location.search.includes('print=true')) {
-            setTimeout(() => {
-                window.print();
-            }, 1000);
-        }
-
         // Preload images untuk print
         window.onload = function() {
             const images = document.querySelectorAll('.barcode-image');
