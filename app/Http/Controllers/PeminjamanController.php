@@ -72,13 +72,10 @@ class PeminjamanController extends Controller
         if ($user->isPetugasPengajuan()) return 'Validasi Pengajuan Barang';
         if ($user->isManajerPersetujuan()) return 'Persetujuan Peminjaman';
         if ($user->isPetugasBarangKeluar()) return 'Proses Barang Keluar';
-        if ($user->isAdmin()) return 'Management Peminjaman'; // Title untuk Main Admin
+        if ($user->isAdmin()) return 'Management Peminjaman';
         return 'Management Peminjaman';
     }
 
-    /**
-     * Show validation form for Admin 1
-     */
     public function showValidationForm($id)
     {
         if (!auth()->user()->isPetugasPengajuan() && !auth()->user()->isAdmin()) {
@@ -108,9 +105,6 @@ class PeminjamanController extends Controller
         ]);
     }
 
-    /**
-     * Process validation by Admin 1 atau Main Admin
-     */
     public function processValidation(Request $request, $id)
     {
         if (!auth()->user()->isPetugasPengajuan() && !auth()->user()->isAdmin()) {
@@ -156,9 +150,6 @@ class PeminjamanController extends Controller
             ->with('success', $message);
     }
 
-    /**
-     * Show validation details for Admin 2 atau Main Admin
-     */
     public function showValidationDetails($id)
     {
         if (!auth()->user()->isManajerPersetujuan() && !auth()->user()->isAdmin()) {
@@ -177,9 +168,6 @@ class PeminjamanController extends Controller
         ]);
     }
 
-    /**
-     * Approve oleh Admin 2 (Manajer Persetujuan) atau Main Admin
-     */
     public function approve($id)
     {
         if (!auth()->user()->isManajerPersetujuan() && !auth()->user()->isAdmin()) {
@@ -208,9 +196,6 @@ class PeminjamanController extends Controller
             ->with('success', 'Pengajuan disetujui! Petugas barang keluar akan memproses.');
     }
 
-    /**
-     * Reject oleh Admin 2 (Manajer Persetujuan) atau Main Admin
-     */
     public function reject(Request $request, $id)
     {
         if (!auth()->user()->isManajerPersetujuan() && !auth()->user()->isAdmin()) {
@@ -238,9 +223,6 @@ class PeminjamanController extends Controller
             ->with('success', 'Pengajuan berhasil ditolak.');
     }
 
-    /**
-     * Proses barang keluar oleh Admin 3 (Petugas Barang Keluar) atau Main Admin
-     */
     public function processBarangKeluar($id)
     {
         if (!auth()->user()->isPetugasBarangKeluar() && !auth()->user()->isAdmin()) {
@@ -287,9 +269,6 @@ class PeminjamanController extends Controller
             ->with('success', 'Barang berhasil dikeluarkan dari gudang! Menunggu konfirmasi user.');
     }
 
-    /**
-     * Complete peminjaman oleh User setelah menerima barang
-     */
     public function completePeminjaman($id)
     {
         $peminjaman = Peminjaman::findOrFail($id);
@@ -475,9 +454,6 @@ class PeminjamanController extends Controller
             ->with('success', $message);
     }
 
-    /**
-     * Return barang oleh User setelah selesai meminjam
-     */
     public function return($id)
     {
         $peminjaman = Peminjaman::with('barang')->findOrFail($id);
@@ -491,44 +467,46 @@ class PeminjamanController extends Controller
                 ->with('error', 'Hanya peminjaman yang sudah selesai yang dapat dikembalikan.');
         }
 
-        $barangAsli = Laporan::where('kode_barang', $peminjaman->barang->kode_barang)
+        // 1. Cari laporan barang masuk yang sesuai dengan barang yang dipinjam
+        $laporanMasuk = Laporan::where('kode_barang', $peminjaman->barang->kode_barang)
             ->where('jenis_laporan', 'masuk')
             ->first();
 
-        if (!$barangAsli) {
+        if (!$laporanMasuk) {
             return redirect()->route('peminjaman.index')
-                ->with('error', 'Barang asli tidak ditemukan.');
+                ->with('error', 'Laporan barang masuk tidak ditemukan.');
         }
 
-        // 1. Tambah stok di barang asli
-        $barangAsli->jumlah += $peminjaman->jumlah_pinjam;
-        $barangAsli->save();
+        // 2. Cari laporan barang keluar untuk peminjaman ini
+        $laporanKeluar = Laporan::where('jenis_laporan', 'keluar')
+            ->where('kode_barang', $peminjaman->barang->kode_barang)
+            ->where('keterangan', 'like', '%' . $peminjaman->kode_peminjaman . '%')
+            ->first();
 
-        // 2. BUAT LAPORAN BARU untuk mencatat pengembalian barang (BARANG MASUK)
-        Laporan::create([
-            'jenis_laporan' => 'masuk',
-            'kode_barang' => $peminjaman->barang->kode_barang,
-            'nama_barang' => $peminjaman->barang->nama_barang,
-            'jumlah' => $peminjaman->jumlah_pinjam,
-            'satuan' => $peminjaman->barang->satuan,
-            'keterangan' => 'PENGEMBALIAN: ' . $peminjaman->kode_peminjaman . ' - Dikembalikan oleh ' . $peminjaman->user->name,
-            'lokasi' => 'Gudang Utama',
-            'user_id' => auth()->id(),
+        // 3. UPDATE laporan barang masuk yang sudah ada (tambah stok)
+        $laporanMasuk->update([
+            'jumlah' => $laporanMasuk->jumlah + $peminjaman->jumlah_pinjam,
+            'keterangan' => $laporanMasuk->keterangan . ' | PENGEMBALIAN: ' . $peminjaman->kode_peminjaman . ' oleh ' . $peminjaman->user->name . ' (' . now()->format('d/m/Y') . ')',
         ]);
 
-        // 3. Update status peminjaman
+        // 4. HAPUS laporan barang keluar
+        if ($laporanKeluar) {
+            $laporanKeluar->delete();
+        }
+
+        // 5. Update status peminjaman
         $peminjaman->update([
             'status' => 'returned',
             'returned_at' => now(),
         ]);
 
-        // 4. Kirim notifikasi
+        // 6. Kirim notifikasi
         $admins = User::where('email', 'like', '%admin%@storage.com')->get();
         if ($admins->isNotEmpty()) {
             Notification::send($admins, new PeminjamanNotification($peminjaman, 'returned', auth()->user()));
         }
 
         return redirect()->route('peminjaman.index')
-            ->with('success', 'Barang berhasil dikembalikan! Stok telah dikembalikan ke inventory dan laporan pengembalian telah dicatat.');
+            ->with('success', 'Barang berhasil dikembalikan! Stok telah ditambahkan ke laporan barang masuk dan laporan barang keluar telah dihapus.');
     }
 }

@@ -68,20 +68,32 @@ class DashboardController extends Controller
                 ->orderBy('jumlah', 'desc')
                 ->take(10)
                 ->get();
+
+            // SAMAKAN DENGAN LOGIC LAPORAN - hitung semua barang masuk
+            $totalMasuk = Laporan::where('jenis_laporan', 'masuk')->sum('jumlah');
+            $totalKeluar = Laporan::where('jenis_laporan', 'keluar')->sum('jumlah');
+
             $data['statistik_gudang'] = [
                 'total_approved' => Peminjaman::where('status', 'approved')->count(),
                 'total_completed' => Peminjaman::where('status', 'completed')->count(),
-                'stok_tersedia' => Laporan::where('jenis_laporan', 'masuk')->sum('jumlah'),
+                'stok_tersedia' => $totalMasuk - $totalKeluar, // Hitung stok aktual
+                'total_masuk' => $totalMasuk, // Sama seperti di laporan
+                'total_keluar' => $totalKeluar, // Sama seperti di laporan
             ];
         }
 
-        // Data untuk Main Admin (tetap seperti sebelumnya)
+        // Data untuk Main Admin (samakan dengan logic laporan)
         if ($user->isAdmin()) {
             $data['recent_laporans'] = Laporan::with('user')->latest()->take(4)->get();
             $data['total_laporan'] = Laporan::count();
+
+            // SAMAKAN DENGAN LOGIC LAPORAN
             $data['total_barang_masuk'] = Laporan::where('jenis_laporan', 'masuk')->sum('jumlah');
             $data['total_barang_keluar'] = Laporan::where('jenis_laporan', 'keluar')->sum('jumlah');
             $data['total_user'] = User::count();
+
+            // Tambah stok aktual untuk admin juga
+            $data['stok_aktual'] = $data['total_barang_masuk'] - $data['total_barang_keluar'];
         }
 
         return view('dashboard', $data);
