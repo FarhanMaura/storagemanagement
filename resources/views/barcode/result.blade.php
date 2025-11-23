@@ -67,7 +67,7 @@
                     <div class="barcode-label text-center bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 p-8 rounded-2xl border-2 border-green-200 dark:border-green-700">
                         <!-- Company Info -->
                         <div class="mb-6">
-                            <h4 class="font-bold text-2xl text-gray-900 dark:text-white" style="font-size: 22pt;">PT. PENGELOLA KERTAS</h4>
+                            <h4 class="font-bold text-2xl text-gray-900 dark:text-white" style="font-size: 22pt;">PT. JOKOWIDODO 3PERIODE</h4>
                             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" style="font-size: 11pt;">Storage Management System</p>
                         </div>
 
@@ -102,7 +102,7 @@
                     <div class="barcode-label text-center bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-purple-900/20 dark:to-indigo-900/20 p-8 rounded-2xl border-2 border-purple-200 dark:border-purple-700">
                         <!-- Company Info -->
                         <div class="mb-4">
-                            <h4 class="font-bold text-xl text-gray-900 dark:text-white" style="font-size: 18pt;">PT. PENGELOLA KERTAS</h4>
+                            <h4 class="font-bold text-xl text-gray-900 dark:text-white" style="font-size: 18pt;">PT. JOKOWIDODO 3PERIODE</h4>
                             <p class="text-xs text-gray-600 dark:text-gray-400 mt-1" style="font-size: 9pt;">Inventory Management</p>
                         </div>
 

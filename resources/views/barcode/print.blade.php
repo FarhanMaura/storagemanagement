@@ -166,7 +166,7 @@
         <!-- QR Code Section -->
         <div class="barcode-section qr-section">
             <div class="company-info">
-                <h3>PT. PENGELOLA KERTAS</h3>
+                <h3>PT. JOKOWIDODO 3PERIODE</h3>
                 <p>Storage Management System</p>
             </div>
 
@@ -190,7 +190,7 @@
         <!-- Barcode 1D Section -->
         <div class="barcode-section">
             <div class="company-info">
-                <h3>PT. PENGELOLA KERTAS</h3>
+                <h3>PT. JOKOWIDODO 3PERIODE</h3>
                 <p>Inventory Management System</p>
             </div>
 
