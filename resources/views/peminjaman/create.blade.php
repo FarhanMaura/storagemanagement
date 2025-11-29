@@ -44,7 +44,7 @@
                         </div>
                     @endif
 
-                    <form action="{{ route('peminjaman.store') }}" method="POST">
+                    <form action="{{ route('peminjaman.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
 
                         <!-- Barang -->
@@ -104,6 +104,14 @@
                             <textarea name="keperluan" id="keperluan" rows="4" required
                                 class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                                 placeholder="Jelaskan keperluan peminjaman...">{{ old('keperluan') }}</textarea>
+                        </div>
+
+                        <!-- Surat Perintah/Izin -->
+                        <div class="mb-8">
+                            <label for="document" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Surat Perintah/Izin *</label>
+                            <input type="file" name="document" id="document" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,.bmp,.gif,.svg"
+                                class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Upload surat perintah/izin dari atasan (PDF, Word, atau Gambar, max 2MB)</p>
                         </div>
 
                         <!-- Informasi -->

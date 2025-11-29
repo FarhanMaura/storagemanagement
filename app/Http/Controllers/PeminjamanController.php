@@ -323,6 +323,7 @@ class PeminjamanController extends Controller
             'tanggal_pinjam' => 'required|date|after_or_equal:today',
             'tanggal_kembali' => 'required|date|after:tanggal_pinjam',
             'keperluan' => 'required|string|max:500',
+            'document' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png,webp,bmp,gif,svg|max:2048',
         ]);
 
         $barang = Laporan::findOrFail($request->barang_id);
@@ -334,6 +335,14 @@ class PeminjamanController extends Controller
 
         $kodePeminjaman = 'PINJ-' . date('Ymd') . '-' . str_pad(Peminjaman::count() + 1, 4, '0', STR_PAD_LEFT);
 
+        // Handle file upload
+        $documentPath = null;
+        if ($request->hasFile('document')) {
+            $file = $request->file('document');
+            $filename = time() . '_' . $kodePeminjaman . '.' . $file->getClientOriginalExtension();
+            $documentPath = $file->storeAs('documents', $filename, 'public');
+        }
+
         $peminjaman = Peminjaman::create([
             'kode_peminjaman' => $kodePeminjaman,
             'user_id' => auth()->id(),
@@ -342,6 +351,7 @@ class PeminjamanController extends Controller
             'tanggal_pinjam' => $request->tanggal_pinjam,
             'tanggal_kembali' => $request->tanggal_kembali,
             'keperluan' => $request->keperluan,
+            'document_path' => $documentPath,
             'status' => 'pending',
         ]);
 

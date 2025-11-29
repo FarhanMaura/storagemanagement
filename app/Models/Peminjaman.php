@@ -19,6 +19,7 @@ class Peminjaman extends Model
         'tanggal_pinjam',
         'tanggal_kembali',
         'keperluan',
+        'document_path',
         'status',
         'catatan_admin',
         'validated_by',

@@ -62,6 +62,16 @@
                                     <option value="barcode">Barcode 1D Saja</option>
                                 </select>
                             </div>
+
+                            <!-- Quantity -->
+                            <div>
+                                <label for="quantity" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                    Jumlah Barcode *
+                                </label>
+                                <input type="number" name="quantity" id="quantity" value="1" min="1" required
+                                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Masukkan jumlah barang yang ingin dibuatkan barcodenya</p>
+                            </div>
                         </div>
 
                         <button type="submit"

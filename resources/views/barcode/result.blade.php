@@ -6,7 +6,7 @@
             </h2>
             <div class="flex space-x-3">
                 <!-- Ganti tombol print dengan link ke halaman print khusus -->
-                <a href="{{ route('barcode.print', ['kode_barang' => $barang->kode_barang, 'jenis' => $jenis_barcode]) }}"
+                <a href="{{ route('barcode.print', ['kode_barang' => $barang->kode_barang, 'jenis' => $jenis_barcode, 'quantity' => count($barcodes)]) }}"
                    target="_blank"
                    class="bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 no-print transition-all duration-300 hover:scale-105 font-semibold flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,72 +58,80 @@
             <!-- Barcode Results -->
             <div class="space-y-8">
                 @if(in_array($jenis_barcode, ['keduanya', 'qr']))
-                <!-- QR Code -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-8 print-break">
-                    <h3 class="text-xl font-semibold mb-6 text-center no-print flex items-center justify-center">
-                        <span class="w-2 h-6 bg-green-500 rounded-full mr-3"></span>
-                        QR Code Label
-                    </h3>
-                    <div class="barcode-label text-center bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 p-8 rounded-2xl border-2 border-green-200 dark:border-green-700">
-                        <!-- Company Info -->
-                        <div class="mb-6">
-                            <h4 class="font-bold text-2xl text-gray-900 dark:text-white" style="font-size: 22pt;">PT. JOKOWIDODO 3PERIODE</h4>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" style="font-size: 11pt;">Storage Management System</p>
-                        </div>
+                <!-- QR Code Results -->
+                <div class="space-y-8">
+                    @foreach($barcodes as $barcode)
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-8 print-break">
+                        <h3 class="text-xl font-semibold mb-6 text-center no-print flex items-center justify-center">
+                            <span class="w-2 h-6 bg-green-500 rounded-full mr-3"></span>
+                            QR Code Label ({{ $barcode['code'] }})
+                        </h3>
+                        <div class="barcode-label text-center bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 p-8 rounded-2xl border-2 border-green-200 dark:border-green-700">
+                            <!-- Company Info -->
+                            <div class="mb-6">
+                                <h4 class="font-bold text-2xl text-gray-900 dark:text-white" style="font-size: 22pt;">PT. JOKOWIDODO 3PERIODE</h4>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" style="font-size: 11pt;">Storage Management System</p>
+                            </div>
 
-                        <!-- QR Code -->
-                        <div class="mb-6 flex justify-center">
-                            <div class="bg-white p-4 rounded-xl shadow-lg">
-                                <img src="{{ $barcodeQR }}" alt="QR Code {{ $barang->kode_barang }}"
-                                     class="barcode-image mx-auto" style="width: 220px; height: 220px;">
+                            <!-- QR Code -->
+                            <div class="mb-6 flex justify-center">
+                                <div class="bg-white p-4 rounded-xl shadow-lg">
+                                    <img src="{{ $barcode['barcodeQR'] }}" alt="QR Code {{ $barcode['code'] }}"
+                                         class="barcode-image mx-auto" style="width: 220px; height: 220px;">
+                                </div>
+                            </div>
+
+                            <!-- Product Info -->
+                            <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-sm">
+                                <p class="font-semibold text-gray-900 dark:text-white mb-2" style="font-size: 16pt;">{{ $barcode['code'] }}</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300 mb-3" style="font-size: 11pt;">{{ Str::limit($barang->nama_barang, 35) }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400" style="font-size: 9pt;">
+                                    🔍 Scan untuk informasi lengkap<br>
+                                    <strong>{{ url('/scan/' . $barang->kode_barang) }}</strong>
+                                </p>
                             </div>
                         </div>
-
-                        <!-- Product Info -->
-                        <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-sm">
-                            <p class="font-semibold text-gray-900 dark:text-white mb-2" style="font-size: 16pt;">{{ $barang->kode_barang }}</p>
-                            <p class="text-sm text-gray-700 dark:text-gray-300 mb-3" style="font-size: 11pt;">{{ Str::limit($barang->nama_barang, 35) }}</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400" style="font-size: 9pt;">
-                                🔍 Scan untuk informasi lengkap<br>
-                                <strong>{{ url('/scan/' . $barang->kode_barang) }}</strong>
-                            </p>
-                        </div>
                     </div>
+                    @endforeach
                 </div>
                 @endif
 
                 @if(in_array($jenis_barcode, ['keduanya', 'barcode']))
-                <!-- Barcode 1D -->
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-8 print-break">
-                    <h3 class="text-xl font-semibold mb-6 text-center no-print flex items-center justify-center">
-                        <span class="w-2 h-6 bg-purple-500 rounded-full mr-3"></span>
-                        Barcode 1D Label
-                    </h3>
-                    <div class="barcode-label text-center bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-purple-900/20 dark:to-indigo-900/20 p-8 rounded-2xl border-2 border-purple-200 dark:border-purple-700">
-                        <!-- Company Info -->
-                        <div class="mb-4">
-                            <h4 class="font-bold text-xl text-gray-900 dark:text-white" style="font-size: 18pt;">PT. JOKOWIDODO 3PERIODE</h4>
-                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1" style="font-size: 9pt;">Inventory Management</p>
-                        </div>
+                <!-- Barcode 1D Results -->
+                <div class="space-y-8 mt-8">
+                    @foreach($barcodes as $barcode)
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-8 print-break">
+                        <h3 class="text-xl font-semibold mb-6 text-center no-print flex items-center justify-center">
+                            <span class="w-2 h-6 bg-purple-500 rounded-full mr-3"></span>
+                            Barcode 1D Label ({{ $barcode['code'] }})
+                        </h3>
+                        <div class="barcode-label text-center bg-gradient-to-br from-purple-50 to-indigo-100 dark:from-purple-900/20 dark:to-indigo-900/20 p-8 rounded-2xl border-2 border-purple-200 dark:border-purple-700">
+                            <!-- Company Info -->
+                            <div class="mb-4">
+                                <h4 class="font-bold text-xl text-gray-900 dark:text-white" style="font-size: 18pt;">PT. JOKOWIDODO 3PERIODE</h4>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1" style="font-size: 9pt;">Inventory Management</p>
+                            </div>
 
-                        <!-- Barcode 1D -->
-                        <div class="mb-4 flex justify-center">
-                            <div class="bg-white p-4 rounded-xl shadow-lg">
-                                <img src="{{ $barcode1D }}" alt="Barcode {{ $barang->kode_barang }}"
-                                     class="barcode-image mx-auto" style="height: 90px; width: auto;">
+                            <!-- Barcode 1D -->
+                            <div class="mb-4 flex justify-center">
+                                <div class="bg-white p-4 rounded-xl shadow-lg">
+                                    <img src="{{ $barcode['barcode1D'] }}" alt="Barcode {{ $barcode['code'] }}"
+                                         class="barcode-image mx-auto" style="height: 90px; width: auto;">
+                                </div>
+                            </div>
+
+                            <!-- Product Info -->
+                            <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-sm">
+                                <p class="font-semibold text-gray-900 dark:text-white mb-1" style="font-size: 14pt;">{{ $barcode['code'] }}</p>
+                                <p class="text-xs text-gray-700 dark:text-gray-300 mb-2" style="font-size: 10pt;">{{ Str::limit($barang->nama_barang, 28) }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400" style="font-size: 8pt;">
+                                    📠 Scan barcode untuk informasi stok<br>
+                                    Gunakan barcode scanner
+                                </p>
                             </div>
                         </div>
-
-                        <!-- Product Info -->
-                        <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-sm">
-                            <p class="font-semibold text-gray-900 dark:text-white mb-1" style="font-size: 14pt;">{{ $barang->kode_barang }}</p>
-                            <p class="text-xs text-gray-700 dark:text-gray-300 mb-2" style="font-size: 10pt;">{{ Str::limit($barang->nama_barang, 28) }}</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400" style="font-size: 8pt;">
-                                📠 Scan barcode untuk informasi stok<br>
-                                Gunakan barcode scanner
-                            </p>
-                        </div>
                     </div>
+                    @endforeach
                 </div>
                 @endif
             </div>

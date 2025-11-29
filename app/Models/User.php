@@ -17,6 +17,7 @@ class User extends Authenticatable
         'email',
         'password',
         'google2fa_secret',
+        'role_id',
     ];
 
     protected $hidden = [
@@ -34,30 +35,40 @@ class User extends Authenticatable
     /**
      * Check user role based on email (BACKWARD COMPATIBLE)
      */
+    /**
+     * Relationship with Role
+     */
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Check user role based on database role
+     */
     public function isUser()
     {
-        return !$this->isAdmin() && !$this->isPetugasPengajuan() &&
-               !$this->isManajerPersetujuan() && !$this->isPetugasBarangKeluar();
+        return !$this->role || $this->role->slug === 'user';
     }
 
     public function isAdmin()
     {
-        return $this->email === 'admin@storage.com';
+        return $this->role && $this->role->slug === 'admin';
     }
 
     public function isPetugasPengajuan()
     {
-        return $this->email === 'admin1@storage.com' || $this->isAdmin();
+        return $this->isAdmin() || ($this->role && $this->role->slug === 'petugas_pengajuan');
     }
 
     public function isManajerPersetujuan()
     {
-        return $this->email === 'admin2@storage.com' || $this->isAdmin();
+        return $this->isAdmin() || ($this->role && $this->role->slug === 'manajer_persetujuan');
     }
 
     public function isPetugasBarangKeluar()
     {
-        return $this->email === 'admin3@storage.com' || $this->isAdmin();
+        return $this->isAdmin() || ($this->role && $this->role->slug === 'petugas_barang_keluar');
     }
 
     /**
@@ -65,11 +76,7 @@ class User extends Authenticatable
      */
     public function getRoleName()
     {
-        if ($this->isAdmin()) return 'Main Admin';
-        if ($this->isPetugasPengajuan()) return 'Petugas Pengajuan';
-        if ($this->isManajerPersetujuan()) return 'Manajer Persetujuan';
-        if ($this->isPetugasBarangKeluar()) return 'Petugas Barang Keluar';
-        return 'User';
+        return $this->role ? $this->role->name : 'User';
     }
 
     // ==================== RELATIONSHIPS PEMINJAMAN BARU ====================
@@ -188,7 +195,9 @@ class User extends Authenticatable
      */
     public function scopeAdmins($query)
     {
-        return $query->where('email', 'admin@storage.com');
+        return $query->whereHas('role', function($q) {
+            $q->where('slug', 'admin');
+        });
     }
 
     /**
@@ -196,7 +205,9 @@ class User extends Authenticatable
      */
     public function scopeRegularUsers($query)
     {
-        return $query->where('email', '!=', 'admin@storage.com');
+        return $query->whereDoesntHave('role', function($q) {
+            $q->where('slug', 'admin');
+        });
     }
 
     /**

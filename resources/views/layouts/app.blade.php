@@ -130,6 +130,12 @@
             </div>
         </div>
 
+        <!-- Toast Notifications -->
+        <x-toast-notification />
+
+        <!-- Confirmation Modal -->
+        <x-confirm-modal />
+
         <script>
             // Theme Toggle
             document.getElementById('theme-toggle').addEventListener('click', function() {
