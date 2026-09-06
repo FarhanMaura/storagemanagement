@@ -64,12 +64,15 @@ class LaporanController extends Controller
         }
 
         $request->validate([
-            'jenis_laporan' => 'required|in:masuk,keluar,',
+            'jenis_laporan' => 'required|in:masuk,keluar',
             'kode_barang' => 'required|string|max:50',
             'nama_barang' => 'required|string|max:255',
             'jumlah' => 'required|integer|min:1',
+            'jumlah_rusak' => 'nullable|integer|min:0|lte:jumlah',
             'keterangan' => 'nullable|string',
             'lokasi' => 'required|string|max:100',
+        ], [
+            'jumlah_rusak.lte' => 'Jumlah rusak tidak boleh melebihi total jumlah barang.',
         ]);
 
         $laporan = Laporan::create([
@@ -77,6 +80,7 @@ class LaporanController extends Controller
             'kode_barang' => $request->kode_barang,
             'nama_barang' => $request->nama_barang,
             'jumlah' => $request->jumlah,
+            'jumlah_rusak' => $request->jenis_laporan === 'masuk' ? ($request->jumlah_rusak ?? 0) : 0,
             'keterangan' => $request->keterangan,
             'lokasi' => $request->lokasi,
             'user_id' => auth()->id(),
@@ -131,8 +135,11 @@ class LaporanController extends Controller
             'kode_barang' => 'required|string|max:50',
             'nama_barang' => 'required|string|max:255',
             'jumlah' => 'required|integer|min:1',
+            'jumlah_rusak' => 'nullable|integer|min:0|lte:jumlah',
             'keterangan' => 'nullable|string',
             'lokasi' => 'required|string|max:100',
+        ], [
+            'jumlah_rusak.lte' => 'Jumlah rusak tidak boleh melebihi total jumlah barang.',
         ]);
 
         $laporan->update([
@@ -140,6 +147,7 @@ class LaporanController extends Controller
             'kode_barang' => $request->kode_barang,
             'nama_barang' => $request->nama_barang,
             'jumlah' => $request->jumlah,
+            'jumlah_rusak' => $request->jenis_laporan === 'masuk' ? ($request->jumlah_rusak ?? 0) : 0,
             'keterangan' => $request->keterangan,
             'lokasi' => $request->lokasi,
         ]);
@@ -228,7 +236,9 @@ class LaporanController extends Controller
                 'JENIS LAPORAN',
                 'KODE BARANG',
                 'NAMA BARANG',
-                'JUMLAH',
+                'TOTAL JUMLAH',
+                'JUMLAH LAYAK',
+                'JUMLAH RUSAK',
                 'LOKASI',
                 'KETERANGAN',
                 'DIBUAT OLEH'
@@ -244,6 +254,8 @@ class LaporanController extends Controller
                     $laporan->kode_barang,
                     $laporan->nama_barang,
                     $laporan->jumlah,
+                    $laporan->jenis_laporan === 'masuk' ? $laporan->jumlah_baik : '-',
+                    $laporan->jenis_laporan === 'masuk' ? ($laporan->jumlah_rusak ?? 0) : '-',
                     $laporan->lokasi,
                     $laporan->keterangan ?? '-',
                     $laporan->user->name

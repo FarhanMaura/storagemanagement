@@ -52,12 +52,25 @@
                             <label for="barang_id" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Pilih Barang *</label>
                             <select name="barang_id" id="barang_id" required
                                 class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                                <option value="">Pilih Barang</option>
+                                <option value="" data-stok="0" data-rusak="0">-- Pilih Barang --</option>
                                 @foreach($barangTersedia as $barang)
+                                    @php
+                                        $layak = $barang->jumlah_baik;
+                                        $rusak = $barang->jumlah_rusak ?? 0;
+                                    @endphp
                                     <option value="{{ $barang->id }}"
                                         {{ old('barang_id') == $barang->id ? 'selected' : '' }}
-                                        data-stok="{{ $barang->jumlah }}"
-                                        {{ $barang->nama_barang }} ({{ $barang->kode_barang }}) - Stok: {{ $barang->jumlah }} {{ $barang->satuan }}
+                                        data-stok="{{ $layak }}"
+                                        data-rusak="{{ $rusak }}"
+                                        data-total="{{ $barang->jumlah }}"
+                                        {{ $layak <= 0 ? 'disabled' : '' }}
+                                        class="{{ $layak <= 0 ? 'text-gray-400 bg-gray-100 dark:bg-gray-800' : '' }}">
+                                        {{ $barang->nama_barang }} ({{ $barang->kode_barang }}) 
+                                        @if($layak > 0)
+                                            — Siap Pinjam: {{ $layak }} unit {{ $rusak > 0 ? '(Rusak: ' . $rusak . ')' : '' }}
+                                        @else
+                                            — [HABIS / RUSAK SEMUA ({{ $rusak }} Rusak)]
+                                        @endif
                                     </option>
                                 @endforeach
                             </select>
@@ -72,7 +85,7 @@
                                     required min="1"
                                     class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                                     placeholder="0">
-                                <small class="text-gray-500 dark:text-gray-400 mt-2 block" id="stok-info">Pilih barang untuk melihat stok</small>
+                                <small class="text-gray-500 dark:text-gray-400 mt-2 block" id="stok-info">Pilih barang untuk melihat stok siap pinjam</small>
                             </div>
 
                             <!-- Tanggal Pinjam -->
@@ -121,11 +134,11 @@
                                     <span class="text-blue-600 dark:text-blue-400 text-xl">ℹ️</span>
                                 </div>
                                 <div class="ml-4">
-                                    <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">Informasi</h4>
+                                    <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">Informasi Peminjaman</h4>
                                     <div class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                                        <p>• Pengajuan akan ditinjau oleh admin</p>
-                                        <p>• Pastikan barang tersedia sebelum mengajukan</p>
-                                        <p>• Isi keperluan dengan jelas dan lengkap</p>
+                                        <p>• Hanya barang dalam <strong>kondisi baik / layak pakai</strong> yang dapat dipinjam.</p>
+                                        <p>• Barang rusak tidak dihitung dalam kuota pinjam.</p>
+                                        <p>• Pengajuan akan ditinjau dan disetujui oleh Admin Kantor Walikota.</p>
                                     </div>
                                 </div>
                             </div>
@@ -152,25 +165,42 @@
     </div>
 
     <script>
-        // Update stok info ketika barang dipilih
-        document.getElementById('barang_id').addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const stok = selectedOption.getAttribute('data-stok');
-            document.getElementById('stok-info').textContent = 'Stok tersedia: ' + stok;
-
-            // Set max value untuk input jumlah
+        function updateStokDisplay() {
+            const selectEl = document.getElementById('barang_id');
+            const selectedOption = selectEl.options[selectEl.selectedIndex];
+            const stokLayak = selectedOption ? (selectedOption.getAttribute('data-stok') || 0) : 0;
+            const stokRusak = selectedOption ? (selectedOption.getAttribute('data-rusak') || 0) : 0;
+            const stokInfo = document.getElementById('stok-info');
             const jumlahInput = document.getElementById('jumlah_pinjam');
-            jumlahInput.max = stok;
-        });
 
-        // Validasi jumlah tidak melebihi stok
+            if (selectEl.value) {
+                if (parseInt(stokLayak) > 0) {
+                    stokInfo.innerHTML = '<span class="text-green-600 dark:text-green-400 font-semibold">✓ Siap pinjam: ' + stokLayak + ' unit</span>' + 
+                        (parseInt(stokRusak) > 0 ? ' <span class="text-amber-600 dark:text-amber-400">(' + stokRusak + ' rusak & terkunci)</span>' : '');
+                } else {
+                    stokInfo.innerHTML = '<span class="text-red-600 dark:text-red-400 font-semibold">⚠️ Seluruh unit rusak atau stok habis!</span>';
+                }
+                jumlahInput.max = stokLayak;
+            } else {
+                stokInfo.textContent = 'Pilih barang untuk melihat stok siap pinjam';
+                jumlahInput.removeAttribute('max');
+            }
+        }
+
+        document.getElementById('barang_id').addEventListener('change', updateStokDisplay);
+
+        // Run on load in case of old value
+        document.addEventListener('DOMContentLoaded', updateStokDisplay);
+
+        // Validasi jumlah tidak melebihi stok layak
         document.getElementById('jumlah_pinjam').addEventListener('input', function() {
-            const selectedOption = document.getElementById('barang_id').options[document.getElementById('barang_id').selectedIndex];
-            const stok = selectedOption ? selectedOption.getAttribute('data-stok') : 0;
+            const selectEl = document.getElementById('barang_id');
+            const selectedOption = selectEl.options[selectEl.selectedIndex];
+            const stok = selectedOption ? (selectedOption.getAttribute('data-stok') || 0) : 0;
             const jumlah = this.value;
 
             if (parseInt(jumlah) > parseInt(stok)) {
-                this.setCustomValidity('Jumlah tidak boleh melebihi stok tersedia');
+                this.setCustomValidity('Jumlah tidak boleh melebihi stok barang yang layak pakai (' + stok + ' unit)');
             } else {
                 this.setCustomValidity('');
             }

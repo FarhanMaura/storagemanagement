@@ -17,6 +17,7 @@ class Laporan extends Model
         'kode_barang',
         'nama_barang',
         'jumlah',
+        'jumlah_rusak',
         'keterangan',
         'lokasi',
         'user_id'
@@ -24,7 +25,21 @@ class Laporan extends Model
 
     protected $casts = [
         'jumlah' => 'integer',
+        'jumlah_rusak' => 'integer',
     ];
+
+    // Accessor untuk jumlah barang yang layak pakai / baik
+    public function getJumlahBaikAttribute()
+    {
+        $rusak = $this->jumlah_rusak ?? 0;
+        return max(0, $this->jumlah - $rusak);
+    }
+
+    // Accessor untuk cek ketersediaan pinjam
+    public function getIsTersediaAttribute()
+    {
+        return $this->jumlah_baik > 0;
+    }
 
     public function user()
     {
@@ -53,6 +68,13 @@ class Laporan extends Model
         return $query->where('jenis_laporan', 'keluar');
     }
 
+    // Scope barang masuk yang memiliki stok layak pakai (> 0)
+    public function scopeLayakPinjam($query)
+    {
+        return $query->where('jenis_laporan', 'masuk')
+            ->whereRaw('jumlah > COALESCE(jumlah_rusak, 0)');
+    }
+
     public function peminjaman()
     {
         return $this->hasMany(Peminjaman::class, 'barang_id');
@@ -70,6 +92,20 @@ class Laporan extends Model
             ->sum('jumlah');
 
         return $totalMasuk - $totalKeluar;
+    }
+
+    // Method untuk mendapatkan stok layak pakai terkini
+    public static function getStokLayakTerkini($kode_barang)
+    {
+        $barangMasuk = self::where('kode_barang', $kode_barang)
+            ->where('jenis_laporan', 'masuk')
+            ->first();
+
+        if (!$barangMasuk) {
+            return 0;
+        }
+
+        return max(0, $barangMasuk->jumlah - ($barangMasuk->jumlah_rusak ?? 0));
     }
 
     // Method untuk mendapatkan barang asli (barang masuk terbaru)

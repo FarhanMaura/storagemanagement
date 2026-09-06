@@ -41,14 +41,7 @@
                 </div>
             </div>
 
-            <!-- DEBUG INFO -->
-            <div class="bg-yellow-100 border border-yellow-400 p-4 rounded-lg mb-6">
-                <h4 class="font-bold text-yellow-800">DEBUG INFO:</h4>
-                <p>Total Data: {{ $statistik['total_laporan'] }}</p>
-                <p>Top Barang Masuk Count: {{ $statistik['top_barang_masuk']->count() }}</p>
-                <p>Top Barang Keluar Count: {{ $statistik['top_barang_keluar']->count() }}</p>
-                <p>Top Users Count: {{ $statistik['top_users']->count() }}</p>
-            </div>
+
 
             <!-- Statistik Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

@@ -159,9 +159,25 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="text-lg font-bold {{ $item->jenis_laporan === 'masuk' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                    <div class="text-base font-bold {{ $item->jenis_laporan === 'masuk' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
                                         {{ $item->jenis_laporan === 'masuk' ? '+' : '-' }}{{ $item->jumlah }}
-                                    </span>
+                                    </div>
+                                    @if($item->jenis_laporan === 'masuk')
+                                        <div class="mt-1 flex flex-wrap gap-1">
+                                            @if(($item->jumlah_rusak ?? 0) > 0)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                                                    ✓ {{ $item->jumlah_baik }} Baik
+                                                </span>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                                                    ⚠️ {{ $item->jumlah_rusak }} Rusak
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                                                    ✓ Semua Layak
+                                                </span>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                                     {{ $item->lokasi }}

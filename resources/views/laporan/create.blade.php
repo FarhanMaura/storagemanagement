@@ -67,14 +67,29 @@
                             @enderror
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <!-- Jumlah -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <!-- Jumlah Total -->
                             <div>
-                                <label for="jumlah" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Jumlah *</label>
+                                <label for="jumlah" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Total Jumlah *</label>
                                 <input type="number" name="jumlah" id="jumlah" value="{{ old('jumlah') }}" required min="1"
                                     class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                    placeholder="0">
+                                    placeholder="Contoh: 100">
                                 @error('jumlah')
+                                    <p class="text-red-500 text-xs mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Jumlah Rusak -->
+                            <div>
+                                <label for="jumlah_rusak" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                    Jumlah Rusak
+                                    <span class="text-xs font-normal text-gray-500 dark:text-gray-400">(Opsional)</span>
+                                </label>
+                                <input type="number" name="jumlah_rusak" id="jumlah_rusak" value="{{ old('jumlah_rusak', 0) }}" min="0"
+                                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                    placeholder="0">
+                                <small class="text-xs text-amber-600 dark:text-amber-400 mt-1 block">Barang rusak tidak bisa dipinjam user</small>
+                                @error('jumlah_rusak')
                                     <p class="text-red-500 text-xs mt-2">{{ $message }}</p>
                                 @enderror
                             </div>
@@ -84,7 +99,7 @@
                                 <label for="lokasi" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Lokasi *</label>
                                 <input type="text" name="lokasi" id="lokasi" value="{{ old('lokasi') }}" required
                                     class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                                    placeholder="Contoh: Ruang A, Ruang Rapat Lt. 2">
+                                    placeholder="Contoh: Ruang A / Gudang 1">
                                 @error('lokasi')
                                     <p class="text-red-500 text-xs mt-2">{{ $message }}</p>
                                 @enderror

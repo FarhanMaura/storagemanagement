@@ -118,8 +118,9 @@ class PeminjamanController extends Controller
             ->where('jenis_laporan', 'masuk')
             ->first();
 
-        if (!$barangAsli || $barangAsli->jumlah < $peminjaman->jumlah_pinjam) {
-            return redirect()->back()->with('error', 'Stok barang tidak mencukupi!');
+        $stokLayak = $barangAsli ? $barangAsli->jumlah_baik : 0;
+        if (!$barangAsli || $stokLayak < $peminjaman->jumlah_pinjam) {
+            return redirect()->back()->with('error', 'Stok barang yang layak pakai tidak mencukupi (Tersedia: ' . $stokLayak . ')!');
         }
 
         $barangAsli->jumlah -= $peminjaman->jumlah_pinjam;
@@ -136,6 +137,7 @@ class PeminjamanController extends Controller
             'kode_barang' => $peminjaman->barang->kode_barang,
             'nama_barang' => $peminjaman->barang->nama_barang,
             'jumlah' => $peminjaman->jumlah_pinjam,
+            'jumlah_rusak' => 0,
             'keterangan' => 'PEMINJAMAN: ' . $peminjaman->kode_peminjaman . ' - ' . $peminjaman->keperluan,
             'lokasi' => 'Peminjaman oleh ' . $peminjaman->user->name,
             'user_id' => auth()->id(),
@@ -175,7 +177,6 @@ class PeminjamanController extends Controller
     public function create()
     {
         $barangTersedia = Laporan::where('jenis_laporan', 'masuk')
-            ->where('jumlah', '>', 0)
             ->orderBy('nama_barang')
             ->get();
 
@@ -197,9 +198,15 @@ class PeminjamanController extends Controller
         ]);
 
         $barang = Laporan::findOrFail($request->barang_id);
-        if ($barang->jumlah < $request->jumlah_pinjam) {
+        $stokLayak = $barang->jumlah_baik;
+
+        if ($stokLayak < $request->jumlah_pinjam) {
+            $pesan = $stokLayak <= 0
+                ? 'Barang ini tidak dapat dipinjam karena stok layak habis / seluruh unit rusak (Rusak: ' . ($barang->jumlah_rusak ?? 0) . ' unit).'
+                : 'Stok barang yang layak pakai tidak mencukupi. Stok layak tersedia: ' . $stokLayak . ' unit (Rusak: ' . ($barang->jumlah_rusak ?? 0) . ' unit).';
+
             return back()->withErrors([
-                'jumlah_pinjam' => 'Stok barang tidak mencukupi. Stok tersedia: ' . $barang->jumlah
+                'jumlah_pinjam' => $pesan
             ])->withInput();
         }
 
@@ -260,7 +267,6 @@ class PeminjamanController extends Controller
         }
 
         $barangTersedia = Laporan::where('jenis_laporan', 'masuk')
-            ->where('jumlah', '>', 0)
             ->orderBy('nama_barang')
             ->get();
 
@@ -288,13 +294,17 @@ class PeminjamanController extends Controller
         ]);
 
         $barang = Laporan::findOrFail($request->barang_id);
-        $stokTersedia = $barang->id == $peminjaman->barang_id
-            ? $barang->jumlah + $peminjaman->jumlah_pinjam
-            : $barang->jumlah;
+        $stokLayakTersedia = $barang->id == $peminjaman->barang_id
+            ? $barang->jumlah_baik + $peminjaman->jumlah_pinjam
+            : $barang->jumlah_baik;
 
-        if ($stokTersedia < $request->jumlah_pinjam) {
+        if ($stokLayakTersedia < $request->jumlah_pinjam) {
+            $pesan = $stokLayakTersedia <= 0
+                ? 'Barang ini tidak dapat dipinjam karena seluruh unit rusak atau stok habis.'
+                : 'Stok barang yang layak pakai tidak mencukupi. Stok layak tersedia: ' . $stokLayakTersedia . ' unit (Rusak: ' . ($barang->jumlah_rusak ?? 0) . ' unit).';
+
             return back()->withErrors([
-                'jumlah_pinjam' => 'Stok barang tidak mencukupi. Stok tersedia: ' . $stokTersedia
+                'jumlah_pinjam' => $pesan
             ])->withInput();
         }
 
@@ -326,9 +336,9 @@ class PeminjamanController extends Controller
             ->with('success', 'Pengajuan peminjaman berhasil dibatalkan/dihapus!');
     }
 
-    public function return($id)
+    public function return(Request $request, $id)
     {
-        $peminjaman = Peminjaman::with('barang')->findOrFail($id);
+        $peminjaman = Peminjaman::with(['barang', 'user'])->findOrFail($id);
 
         if ($peminjaman->user_id !== auth()->id() && !auth()->user()->isAdmin()) {
             abort(403, 'Hanya peminjam atau Admin yang dapat mengembalikan barang.');
@@ -339,6 +349,16 @@ class PeminjamanController extends Controller
                 ->with('error', 'Hanya peminjaman aktif yang dapat dikembalikan.');
         }
 
+        $request->validate([
+            'jumlah_rusak_kembali' => 'nullable|integer|min:0|max:' . $peminjaman->jumlah_pinjam,
+            'catatan_kembali' => 'nullable|string|max:500',
+        ], [
+            'jumlah_rusak_kembali.max' => 'Jumlah rusak tidak boleh melebihi jumlah pinjam (' . $peminjaman->jumlah_pinjam . ' unit).',
+        ]);
+
+        $jumlahRusak = (int) $request->input('jumlah_rusak_kembali', 0);
+        $jumlahBaik = max(0, $peminjaman->jumlah_pinjam - $jumlahRusak);
+
         $laporanMasuk = Laporan::where('kode_barang', $peminjaman->barang->kode_barang)
             ->where('jenis_laporan', 'masuk')
             ->first();
@@ -346,7 +366,9 @@ class PeminjamanController extends Controller
         if ($laporanMasuk) {
             $laporanMasuk->update([
                 'jumlah' => $laporanMasuk->jumlah + $peminjaman->jumlah_pinjam,
-                'keterangan' => $laporanMasuk->keterangan . ' | PENGEMBALIAN: ' . $peminjaman->kode_peminjaman . ' oleh ' . $peminjaman->user->name . ' (' . now()->format('d/m/Y') . ')',
+                'jumlah_rusak' => ($laporanMasuk->jumlah_rusak ?? 0) + $jumlahRusak,
+                'keterangan' => ($laporanMasuk->keterangan ? $laporanMasuk->keterangan . ' | ' : '') . 
+                    'PENGEMBALIAN: ' . $peminjaman->kode_peminjaman . ' (' . $jumlahBaik . ' Baik, ' . $jumlahRusak . ' Rusak) oleh ' . $peminjaman->user->name . ' (' . now()->format('d/m/Y') . ')',
             ]);
         }
 
@@ -361,6 +383,8 @@ class PeminjamanController extends Controller
 
         $peminjaman->update([
             'status' => 'returned',
+            'jumlah_rusak_kembali' => $jumlahRusak,
+            'catatan_kembali' => $request->catatan_kembali,
             'returned_at' => now(),
         ]);
 
@@ -369,8 +393,10 @@ class PeminjamanController extends Controller
             Notification::send($admins, new PeminjamanNotification($peminjaman, 'returned', auth()->user()));
         }
 
-        return redirect()->route('peminjaman.index')
-            ->with('success', 'Barang berhasil dikembalikan! Stok barang telah diperbarui.');
+        $pesan = 'Barang berhasil dikembalikan! Total: ' . $peminjaman->jumlah_pinjam . ' unit (' . $jumlahBaik . ' kondisi baik, ' . $jumlahRusak . ' kondisi rusak tercatat).';
+
+        return redirect()->route('peminjaman.show', $peminjaman->id)
+            ->with('success', $pesan);
     }
 
     public function downloadDocument($id)

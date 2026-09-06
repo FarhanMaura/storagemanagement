@@ -84,11 +84,30 @@
                                     </div>
 
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Jumlah</label>
+                                        <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Total Jumlah</label>
                                         <p class="text-3xl font-bold {{ $laporan->jenis_laporan === 'masuk' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
-                                            {{ $laporan->jenis_laporan === 'masuk' ? '+' : '-' }}{{ number_format($laporan->jumlah) }}
+                                            {{ $laporan->jenis_laporan === 'masuk' ? '+' : '-' }}{{ number_format($laporan->jumlah) }} unit
                                         </p>
                                     </div>
+
+                                    @if($laporan->jenis_laporan === 'masuk')
+                                    <div class="grid grid-cols-2 gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
+                                        <div>
+                                            <label class="block text-xs font-semibold text-green-700 dark:text-green-400 uppercase tracking-wider mb-1">✓ Kondisi Baik / Layak</label>
+                                            <p class="text-xl font-bold text-green-700 dark:text-green-300">
+                                                {{ number_format($laporan->jumlah_baik) }} unit
+                                            </p>
+                                            <span class="text-xs text-green-600 dark:text-green-400">Siap dipinjamkan</span>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold text-red-700 dark:text-red-400 uppercase tracking-wider mb-1">⚠️ Kondisi Rusak</label>
+                                            <p class="text-xl font-bold text-red-700 dark:text-red-300">
+                                                {{ number_format($laporan->jumlah_rusak ?? 0) }} unit
+                                            </p>
+                                            <span class="text-xs text-red-600 dark:text-red-400">Tidak bisa dipinjam</span>
+                                        </div>
+                                    </div>
+                                    @endif
 
                                     <div>
                                         <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Lokasi</label>

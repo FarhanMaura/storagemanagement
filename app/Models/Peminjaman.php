@@ -16,12 +16,14 @@ class Peminjaman extends Model
         'user_id',
         'barang_id',
         'jumlah_pinjam',
+        'jumlah_rusak_kembali',
         'tanggal_pinjam',
         'tanggal_kembali',
         'keperluan',
         'document_path',
         'status',
         'catatan_admin',
+        'catatan_kembali',
         'validated_by',
         'validated_at',
         'approved_by',
@@ -34,11 +36,20 @@ class Peminjaman extends Model
     protected $casts = [
         'tanggal_pinjam' => 'date',
         'tanggal_kembali' => 'date',
+        'jumlah_pinjam' => 'integer',
+        'jumlah_rusak_kembali' => 'integer',
         'validated_at' => 'datetime',
         'approved_at' => 'datetime',
         'completed_at' => 'datetime',
         'returned_at' => 'datetime',
     ];
+
+    // Accessor unit kondisi baik saat dikembalikan
+    public function getJumlahBaikKembaliAttribute()
+    {
+        $rusak = $this->jumlah_rusak_kembali ?? 0;
+        return max(0, $this->jumlah_pinjam - $rusak);
+    }
 
     // Relationships
     public function user()
